@@ -4,6 +4,6 @@ This repository contains the code to reproduce the analyses contained in the sc-
 
 ## sc-StructLMM applications
 
-* Simulation experiments
+* [simulations](../main/simulations/): Simulation experiments
 * [endodiff](../main/endodiff/): Endoderm differentiation of iPSC lines at single-cell resolution ([1](https://www.nature.com/articles/s41467-020-14457-z))
 * [neuroseq](../main/neuroseq/): Dopaminergic neuron differentiation of iPSC lines using single-cell profiles ([2](https://www.nature.com/articles/s41588-021-00801-6))
