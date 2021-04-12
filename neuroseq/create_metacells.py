@@ -132,7 +132,7 @@ for ct in all_days.obs.celltype.unique():
     [t.label.set_fontsize(24) for t in axs.xaxis.get_major_ticks()]
     [t.label.set_rotation("horizontal") for t in axs.xaxis.get_major_ticks()]
     [t.label.set_fontsize(24) for t in axs.yaxis.get_major_ticks()]
-    plt.savefig(wd+"/figures/figures_per_donor/"+str(ct)+"_figures/"+str(ct)+"_Donor_representation_per_condition.png, bbox_inches='tight')
+    plt.savefig(wd+"/figures/figures_per_donor/"+str(ct)+"_figures/"+str(ct)+"_Donor_representation_per_condition.png", bbox_inches='tight')
 
     # Check also the pool
     donors_pools = pd.DataFrame.from_dict(ct_all.obs.groupby(by="donor_id").apply(lambda x: x.pool_id.nunique()).to_dict(), orient="index").rename(columns={0:"counts"})
