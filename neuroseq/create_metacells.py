@@ -7,6 +7,7 @@ from anndata import AnnData
 import scanpy as sc
 import scanpy.external as sce
 import matplotlib.pyplot as plt
+from matplotlib import cm
 from matplotlib.offsetbox import AnchoredText
 import seaborn as sns
 from scipy import sparse
@@ -118,6 +119,10 @@ for ct in all_days.obs.celltype.unique():
     sc.tl.pca(ct_all, n_comps=50, zero_center=True, svd_solver='arpack', random_state=32, use_highly_variable=False)
     sce.pp.harmony_integrate(ct_all, key="pool_id", basis='X_pca', adjusted_basis='X_pca_harmony')
 
+    # Donor representation per condition
+    nd = ct_all.obs.donor_id.nunique()
+    my_colors = cm.get_cmap('RdYlBu', nd)
+    
     fig, axs = plt.subplots(ncols=1, nrows=1, figsize=(20,20), constrained_layout=True)
     tmp = pd.crosstab(ct_all.obs['Condition'], ct_all.obs['donor_id'], normalize='index')
     tmp.plot.bar(stacked=True, ax=axs, colormap=my_colors)
@@ -127,7 +132,7 @@ for ct in all_days.obs.celltype.unique():
     [t.label.set_fontsize(24) for t in axs.xaxis.get_major_ticks()]
     [t.label.set_rotation("horizontal") for t in axs.xaxis.get_major_ticks()]
     [t.label.set_fontsize(24) for t in axs.yaxis.get_major_ticks()]
-    plt.savefig(wd+"/figures/figures_per_donor/"+str(ct)+"_figures/Proportion_of_"+str(ct)+"-cells_per_donor.png", bbox_inches='tight')
+    plt.savefig(wd+"/figures/figures_per_donor/"+str(ct)+"_figures/"+str(ct)+"_Donor_representation_per_condition.png, bbox_inches='tight')
 
     # Check also the pool
     donors_pools = pd.DataFrame.from_dict(ct_all.obs.groupby(by="donor_id").apply(lambda x: x.pool_id.nunique()).to_dict(), orient="index").rename(columns={0:"counts"})
