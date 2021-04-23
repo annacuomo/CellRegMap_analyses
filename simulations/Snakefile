@@ -1,0 +1,26 @@
+from snakemake.utils import Paramspace
+import pandas as pd
+
+# declare a dataframe to be a paramspace
+paramspace = Paramspace(pd.read_csv("params.csv"))
+
+
+rule all:
+    input:
+        expand(
+            "results/simulations/{params}.txt",
+            params=paramspace.instance_patterns)
+
+
+rule simulate:
+    output:
+        f"results/simulations/{paramspace.wildcard_pattern}.txt"
+    resources:
+        mem_mb=50000
+    threads: 4
+    params:
+        # translate the wildcard values into an instance of the param space
+        simulation=paramspace.instance
+    script:
+        'scripts/simulate.py'
+
