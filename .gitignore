@@ -1,6 +1,7 @@
 # Folders
 simulations/results/simulations
-simulations/results/simulations
+simulations/data
+simulations/lsf_reports
 
 # Snakemake
 .snakemake
