@@ -6,14 +6,18 @@ import pandas as pd
 
 from joblib import Parallel, delayed
 
+from limix.qc import quantile_gaussianize
 from struct_lmm2 import StructLMM2, create_variances
 
 from settings import DEFAULT_PARAMS
 from sim_utils import (
-    set_causal_snps,
-    set_cells_per_donor,
-    generate_environment_matrix,
-    simulate_data
+    sample_clusters,
+    sample_endo,
+    create_environment_factors,
+    create_kinship_matrix,
+    create_kinship_factors,
+    simulate_data,
+    sample_nb
 )
 
 
@@ -50,27 +54,58 @@ params['out_file'] = snakemake.output[0] if SNAKEMODE else 'pvals.txt'
 
 
 #===============================================================================
-# Run tests
+# Simulate data & run tests
 #===============================================================================
 # initialize random number generator
 random = np.random.default_rng(params['seed'])
 
 # set indices of causal SNPs
-g_causals, gxe_causals = set_causal_snps(
-    params['n_causal_g'], params['n_causal_gxe'])
+g_causals = list(range(0, params['n_causal_g']))
+gxe_causals = list(range(params['n_causal_g'],
+    params['n_causal_g'] + params['n_causal_gxe']))
 
 # set cells per donor
-n_cells = set_cells_per_donor(
-    params['cells_per_individual'], params['n_individuals'])
+if params['cells_per_individual'] == 'fixed':
+    n_cells = 50
+elif params['cells_per_individual'] == 'variable':
+    n_cells = np.arange(params['n_individuals']) + 1
+else:
+    raise ValueError(
+        'Invalid cells_per_individual value: %s' % params['cells_per_individual'])
 
+print('Setting up environment matrix ...')
 # create environment matrix and decomposition
-env = generate_environment_matrix(
-    params['env'], params['d_env'], n_cells, params['n_individuals'], random)
+if params['env'] == 'endo':
+    E = sample_endo(params['d_env'],
+        params['n_individuals'],
+        n_cells,
+        random)
+elif params['env'] == 'cluster_uniform':
+    E = sample_clusters(
+        params['d_env'],
+        params['n_individuals'],
+        n_cells,
+        random)
+elif params['env'] == 'cluster_biased':
+    E = sample_clusters(
+        params['d_env'],
+        params['n_individuals'],
+        n_cells,
+        random,
+        params['dirichlet_alpha'])
+else:
+    raise ValueError('Invalid env value: %s' % params['env'])
+env = create_environment_factors(E)
+
+print('Setting up kinship matrix ...')
+# create kinship matrix
+Lk = create_kinship_factors(create_kinship_matrix(
+    params['n_individuals'], n_cells)).Lk
 
 # set variances
 v = create_variances(params['r0'], params['v0'])
 
-print('Running simulations for %d genes ... ' % params['n_genes'])
+print('Running simulations for %d gene(s) ... ' % params['n_genes'])
 def sim_and_test(random: np.random.Generator):
     s = simulate_data(
         offset=params['offset'],
@@ -78,6 +113,7 @@ def sim_and_test(random: np.random.Generator):
         n_snps=params['n_snps'],
         n_cells=n_cells,
         env=env,
+        Lk=Lk,
         maf_min=params['maf_min'],
         maf_max=params['maf_max'],
         g_causals=g_causals,
@@ -86,21 +122,46 @@ def sim_and_test(random: np.random.Generator):
         random=random,
     )
 
+    if params['likelihood'] == 'gaussian':
+        y = s.y
+    elif params['likelihood'] == 'negbin':
+        mu = np.exp(params['offset'] + s.y_g + s.y_gxe + s.y_k + s.y_e)
+        y = sample_nb(mu=mu, phi=params['nb_dispersion'], random=random)
+        y = np.log(y + 1)
+    elif params['likelihood'] == 'zinb':
+        mu = np.exp(params['offset'] + s.y_g + s.y_gxe + s.y_k + s.y_e)
+        y = sample_nb(mu=mu, phi=params['nb_dispersion'], random=random)
+        y *= random.binomial(1, 1 - params['p_dropout'], size=y.size)
+        y = np.log(y + 1)
+    elif params['likelihood'] == 'poisson':
+        lam = np.exp(params['offset'] + s.y_g + s.y_gxe + s.y_k + s.y_e)
+        y = random.poisson(lam=lam)
+        y = np.log(y + 1)
+    else:
+        raise ValueError('Unknown likelihood %s' % params['likelihood'])
+    
+    if params['normalize']:
+        y = quantile_gaussianize(y)
+
     # set up model
-    M = np.ones((s.y.shape[0], 1)) # covariates
-    y = s.y.reshape(s.y.shape[0],1)
-    slmm2 = StructLMM2(y, M, s.E, s.Ls)
+    y = s.y.reshape(s.y.shape[0], 1)
+    M = np.ones_like(y)
+    slmm2 = StructLMM2(y, M, env.E, s.Ls)
     pv = slmm2.scan_interaction(s.G)
     return pv[0]
 
-# set random state for each simulated gene
-random_state = random.integers(
-    0, np.iinfo(np.int32).max,
-    size=params['n_genes'])
+threads = min(params['n_genes'], params['threads'])
+if threads == 1:
+    pvals = sim_and_test(random)
+else:
+    # set random state for each simulated gene
+    random_state = random.integers(
+        0, np.iinfo(np.int32).max,
+        size=params['n_genes'])
 
-# run simulations in parallel
-pvals = Parallel(n_jobs=params['threads'])(
-    delayed(sim_and_test)(np.random.default_rng(s)) for s in random_state)
+    # run simulations in parallel
+    pvals = Parallel(n_jobs=params['threads'])(
+        delayed(sim_and_test)(np.random.default_rng(s)) for s in random_state)
 print('Done.')
 
 # save p-values
