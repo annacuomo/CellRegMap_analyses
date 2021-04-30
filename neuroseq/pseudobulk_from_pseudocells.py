@@ -9,7 +9,7 @@ import scanpy as sc
 from scipy import sparse
 
 
-sc.settings.verbosity = 3             # verbosity: errors (0), warnings (1), info (2), hints (3)
+sc.settings.verbosity = 3
 sc.logging.print_header()
 sc.settings.set_figure_params(dpi=80, facecolor='white')
 
@@ -49,7 +49,6 @@ for k,v in res.items():
                 print("Donor {} out of {}".format(i, myfile.obs.donor_id.nunique()))
                 ct_donor = myfile[myfile.obs.donor_id == d]
                 cells = list(ct_donor.obs.groupby(by=k).groups.values())
-                clusters = list(ct_donor.obs.groupby(by=k).groups.keys())
                 if init:
                     # Mean gene expression across cells in the pseudocell
                     pseudobulk = ct_donor[cells[0]].X.mean(axis=0)
