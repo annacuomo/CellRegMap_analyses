@@ -88,8 +88,8 @@ def sample_clusters(
     else:
         # uniform cell distribution
         probs = np.ones((n_individuals, n_clusters)) / n_clusters
-    # create cluster kernel from one-hot encodings
 
+    # sample one-hot encodingds for each cell 
     E = np.zeros((n_samples, n_clusters))
     for i, g in enumerate(individual_groups):
         E[g, :] = random.multinomial(1, pvals=probs[i, :], size=len(g))

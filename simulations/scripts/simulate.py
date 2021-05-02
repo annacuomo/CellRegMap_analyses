@@ -144,7 +144,7 @@ def sim_and_test(random: np.random.Generator):
         y = quantile_gaussianize(y)
 
     # set up model
-    y = s.y.reshape(s.y.shape[0], 1)
+    y = y.reshape(y.shape[0], 1)
     M = np.ones_like(y)
     slmm2 = StructLMM2(y, M, env.E, s.Ls)
     pv = slmm2.scan_interaction(s.G)
