@@ -11,6 +11,7 @@ from struct_lmm2 import StructLMM2, create_variances
 
 from settings import DEFAULT_PARAMS
 from sim_utils import (
+    set_causal_ids,
     sample_clusters,
     sample_endo,
     create_environment_factors,
@@ -54,15 +55,27 @@ params['out_file'] = snakemake.output[0] if SNAKEMODE else 'pvals.txt'
 
 
 #===============================================================================
+# Check values
+#===============================================================================
+n_causal = params['n_causal_g'] + params['n_causal_gxe'] - params['n_causal_shared']
+if n_causal > params['n_snps']:
+    raise ValueError('Number SNPs with genetic effects has to be < n_snps.')
+if (params['n_causal_g'] == 0) ^ (params['r0'] == 0):
+    print('Warning: Only one of n_causal_g or r0 is zero. Simulating no persistent effect.')
+if (params['n_causal_gxe'] == 0) ^ (params['r0'] == 1):
+    print('Warning: Only one of n_causal_g or (1-r0) is zero. Simulating no gxe effect.')
+
+#===============================================================================
 # Simulate data & run tests
 #===============================================================================
 # initialize random number generator
 random = np.random.default_rng(params['seed'])
 
 # set indices of causal SNPs
-g_causals = list(range(0, params['n_causal_g']))
-gxe_causals = list(range(params['n_causal_g'],
-    params['n_causal_g'] + params['n_causal_gxe']))
+(g_causals, gxe_causals) =  set_causal_ids(
+    n_causal_g=params['n_causal_g'],
+    n_causal_gxe=params['n_causal_gxe'],
+    n_causal_shared=params['n_causal_shared'])
 
 # set cells per donor
 if params['cells_per_individual'] == 'fixed':

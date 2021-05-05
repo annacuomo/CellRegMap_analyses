@@ -2,7 +2,7 @@
 # Simulation utilities
 #===============================================================================
 from collections import namedtuple
-from typing import List, Union
+from typing import List, Union, Tuple
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -27,6 +27,21 @@ from struct_lmm2._simulate import (
 )
 
 from settings import ENDO_PCS_PATH, ENDO_META_PATH
+
+
+def set_causal_ids(
+    n_causal_g: int,
+    n_causal_gxe: int,
+    n_causal_shared: int
+) -> Tuple[List[int], List[int]]:
+    """Set ids of causal SNPs for persistent and gxe effects."""
+    if n_causal_shared > min(n_causal_g, n_causal_gxe):
+        raise ValueError('n_causal_shared has to be smaller'
+            'than either n_causal_g or n_causal_gxe')
+    g_causals = list(range(0, n_causal_g))
+    gxe_causals = list(range(n_causal_g - n_causal_shared,
+        n_causal_g + n_causal_gxe - n_causal_shared))
+    return (g_causals, gxe_causals)
 
 
 def _ncells_to_indices(
@@ -202,6 +217,9 @@ def simulate_data(
     random: np.random.Generator,
 ) -> Simulation:
     """Simulates data from StructLMM2 model."""
+    v_g = variances.g if len(g_causals) > 0 else 0
+    v_gxe = variances.gxe if len(gxe_causals) > 0 else 0
+
     n_samples = env.E.shape[0]
 
     mafs = sample_maf(n_snps, maf_min, maf_max, random)
@@ -212,10 +230,9 @@ def simulate_data(
     us = env.U * env.S
     Ls = tuple([ddot(us[:, i], Lk) for i in range(us.shape[1])])
 
-    beta_g = sample_persistent_effsizes(n_snps, g_causals, variances.g, random)
-
-    y_g = sample_persistent_effects(G, beta_g, variances.g)
-    y_gxe = sample_gxe_effects(G, env.E, gxe_causals, variances.gxe, random)
+    beta_g = sample_persistent_effsizes(n_snps, g_causals, v_g, random)
+    y_g = sample_persistent_effects(G, beta_g, v_g)
+    y_gxe = sample_gxe_effects(G, env.E, gxe_causals, v_gxe, random)
     y_k = sample_random_effect(Ls, variances.k, random)
     y_e = sample_random_effect(env.E, variances.e, random)
     y_n = sample_noise_effects(n_samples, variances.n, random)

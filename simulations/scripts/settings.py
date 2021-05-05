@@ -16,6 +16,7 @@ DEFAULT_PARAMS = {
     'offset': 2.5,
     'n_causal_g': 1,
     'n_causal_gxe': 1,
+    'n_causal_shared': 0,
     'r0': .2, # fraction of genetic variance explained by gxe
     'v0': .1, # total variance explained by genetics
     'likelihood': 'gaussian',
