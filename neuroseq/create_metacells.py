@@ -75,6 +75,9 @@ d52 = sc.read(wd+"/Data/Neuroseq/raw_D52.h5")
 d52_untr = d52[d52.obs.treatment == "NONE"] # 303856 cells x 32738 genes
 d52_tr = d52[d52.obs.treatment == "ROT"]  # 219238 cells x 32738 genes
 
+
+## Filter cells based on QC plots
+
 plot_QC(d11, "D11", wd)
 sc.pp.filter_cells(d11, min_genes=1500) # 10426 cells removed
 sc.pp.filter_cells(d11, min_counts=5000) # 1300 cells removed
