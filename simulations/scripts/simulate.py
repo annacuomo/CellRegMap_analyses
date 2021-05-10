@@ -1,5 +1,17 @@
+"""Main simulation script.
+
+By default, i.e. when run as 'python simulate.py', this script will use the 
+simulation parameters defined in settings.DEFAULT_PARAMS.
+
+Alternatively, this script can be called from snakemake, as described here:
+https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#parameter-space-exploration
+
+In this case, default parameter values from settings.DEFAULT_PARAMS will be
+updated if the corresponding keyword is contained in snakemake.params.simulation.
+Parameters not contained in settings.DEFAULT_PARAMS will be ignored.
+"""
 #===============================================================================
-# Simulation script
+# Imports
 #===============================================================================
 import numpy as np
 import pandas as pd
@@ -64,6 +76,7 @@ if (params['n_causal_g'] == 0) ^ (params['r0'] == 0):
     print('Warning: Only one of n_causal_g or r0 is zero. Simulating no persistent effect.')
 if (params['n_causal_gxe'] == 0) ^ (params['r0'] == 1):
     print('Warning: Only one of n_causal_g or (1-r0) is zero. Simulating no gxe effect.')
+
 
 #===============================================================================
 # Simulate data & run tests

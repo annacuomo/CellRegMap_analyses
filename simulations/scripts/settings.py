@@ -27,5 +27,6 @@ DEFAULT_PARAMS = {
     'seed': 124823,
 }
 
+# Locations of the Endoderm PC and meta-data files.
 ENDO_PCS_PATH = os.path.dirname(__file__) +  '/../data/endodiff_100PCs.csv.zip'
 ENDO_META_PATH = os.path.dirname(__file__) +  '/../data/cell_metadata_cols.tsv'

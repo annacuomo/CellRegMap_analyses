@@ -1,5 +1,8 @@
+"""Additional functions used for the simulation experiments.
+
+To be ingrated into struct_lmm2._simulate?"""
 #===============================================================================
-# Simulation utilities
+# Imports
 #===============================================================================
 from collections import namedtuple
 from typing import List, Union, Tuple
@@ -27,6 +30,7 @@ from struct_lmm2._simulate import (
 )
 
 from settings import ENDO_PCS_PATH, ENDO_META_PATH
+#===============================================================================
 
 
 def set_causal_ids(
@@ -34,7 +38,21 @@ def set_causal_ids(
     n_causal_gxe: int,
     n_causal_shared: int
 ) -> Tuple[List[int], List[int]]:
-    """Set ids of causal SNPs for persistent and gxe effects."""
+    """Set ids of causal SNPs for persistent and gxe effects.
+    
+    The first n_causal_g SNPs will be persistent genetic effects, while
+    n_causal_gxe indices starting at n_causal_g - n_causal_shared will be GxE
+    effects.
+
+    Parameters
+    ----------
+    n_causal_g
+        Number of SNPS with persistent effects.
+    n_causal_gxe
+        Number of SNPs with GxE effects.
+    n_causal_shared
+        Number of SNPs with both persistent and GxE effects.
+    """
     if n_causal_shared > min(n_causal_g, n_causal_gxe):
         raise ValueError('n_causal_shared has to be smaller'
             'than either n_causal_g or n_causal_gxe')
@@ -48,7 +66,8 @@ def _ncells_to_indices(
     n_individuals: int,
     n_cells: Union[int, List[int]],
 ):
-    """Computes number of samples and indices for cells of each individual.
+    """Computes number of samples (total number of cells across all individuals)
+    and indices for cells of each individual.
     
     Parameters
     ----------
@@ -76,7 +95,8 @@ def sample_clusters(
 ) -> ArrayLike:
     """Creates one-hot encoding for cell clusters in multi-donor data.
 
-    Passing dirichlet_alpha allows sampling individual-specific cluster distributions.
+    Cells are randomly assigned to one of n_clusters clusters. Passing
+    dirichlet_alpha allows sampling individual-specific cluster distributions.
 
     Parameters
     ----------
@@ -92,6 +112,11 @@ def sample_clusters(
         If not None, sample the cluster assignment probabilities for each
         individual from a Dirichlet distribution with concentration parameters
         dirichlet_alpha * np.ones(n_clusters). 
+
+    Returns
+    ----------
+    E
+        Environmental variables.
     """
     n_samples, individual_groups = _ncells_to_indices(n_individuals, n_cells)
 
@@ -134,6 +159,11 @@ def sample_endo(
         Use meta information to sample cells for each synthetic individual from
         only one real individual. Otherwise sample from the combined set of 
         cells.
+
+    Returns
+    ----------
+    E
+        Environmental variables.
     """
     n_samples, individual_groups = _ncells_to_indices(n_individuals, n_cells)
     cells_by_individual = [len(g) for g in individual_groups]
@@ -264,7 +294,7 @@ def sample_nb(
 
     Parameterization using mean (mu) and dispersion (phi).
     """
-    n = 1/phi
+    n = 1 / phi
     p = n / (n + mu) 
     return random.negative_binomial(n=n, p=p, size=size)
 
