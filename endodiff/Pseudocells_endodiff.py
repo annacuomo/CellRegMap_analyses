@@ -27,17 +27,17 @@ parser.add_argument('--hvgs', help="make pseudocells based on the given number o
 args = parser.parse_args()
 
 
-if os.path.isdir(os.path.join(ars.fig_dir, "Pseudocells")):
-    sc.settings.figdir = os.path.join(ars.fig_dir, "Pseudocells")
+if os.path.isdir(os.path.join(args.fig_dir, "Pseudocells")):
+    sc.settings.figdir = os.path.join(args.fig_dir, "Pseudocells")
 else:
-    os.makedirs(os.path.join(ars.fig_dir, "Pseudocells"))
-    sc.settings.figdir = os.path.join(ars.fig_dir, "Pseudocells")
+    os.makedirs(os.path.join(args.fig_dir, "Pseudocells"))
+    sc.settings.figdir = os.path.join(args.fig_dir, "Pseudocells")
             
         
-if os.path.isdir(ars.output_dir):
+if os.path.isdir(args.output_dir):
     pass
 else:
-    os.makedirs(ars.output_dir)
+    os.makedirs(args.output_dir)
         
 
 _, ext_counts = os.path.splitext(args.count_matrix)
@@ -57,7 +57,7 @@ adata.raw = adata.copy()
 sc.pp.regress_out(adata, keys="experiment", n_jobs=None, copy=False)
 
 # # Save the batch-corrected data if you wish
-# adata.write(os.path.join(ars.output_dir, "endodiff_lognorm_experiment_regressed.h5"))
+# adata.write(os.path.join(args.output_dir, "endodiff_lognorm_experiment_regressed.h5"))
 
 # PCA
 if args.hvgs:
@@ -76,11 +76,11 @@ for d in adata.obs.donor_long_id.unique():
     ddonor = adata[adata.obs.donor_long_id == d].copy()
     assert ddonor.obs.donor_long_id.nunique() == 1
     
-    if os.path.isdir(os.path.join(ars.fig_dir, "Pseudocells", str(d)+"_figures")):
-        sc.settings.figdir = os.path.join(ars.fig_dir, "Pseudocells", str(d)+"_figures")
+    if os.path.isdir(os.path.join(args.fig_dir, "Pseudocells", str(d)+"_figures")):
+        sc.settings.figdir = os.path.join(args.fig_dir, "Pseudocells", str(d)+"_figures")
     else:
-        os.makedirs(os.path.join(ars.fig_dir, "Pseudocells", str(d)+"_figures"))
-        sc.settings.figdir = os.path.join(ars.fig_dir, "Pseudocells", str(d)+"_figures")
+        os.makedirs(os.path.join(args.fig_dir, "Pseudocells", str(d)+"_figures"))
+        sc.settings.figdir = os.path.join(args.fig_dir, "Pseudocells", str(d)+"_figures")
             
     sc.pp.neighbors(ddonor, n_neighbors=10, use_rep="X_pca", n_pcs=40, knn=True, method='umap', metric='euclidean', key_added="neighbors_euclidean")
     sc.tl.umap(ddonor, min_dist=0.1, spread=1.0, n_components=2, maxiter=None, alpha=1.0, gamma=1.0, negative_sample_rate=5, init_pos='spectral', random_state=0, a=None, b=None, copy=False, method='umap', neighbors_key="neighbors_euclidean")
@@ -101,7 +101,7 @@ for d in adata.obs.donor_long_id.unique():
         [axs[i].yaxis.label.set_fontsize(18) for i in range(len(axs))]
         plt.suptitle(" {}  -  res = {}".format(str(d), str(r)), fontsize=20, x=0.45, y=0.97)
         plt.tight_layout()
-        plt.savefig(os.path.join(ars.fig_dir, "Pseudocells", str(d)+"_figures", "UMAP_{}_pseudocells_Leiden_res-{}.png".format(str(d), rr)))       
+        plt.savefig(os.path.join(args.fig_dir, "Pseudocells", str(d)+"_figures", "UMAP_{}_pseudocells_Leiden_res-{}.png".format(str(d), rr)))       
         
     # Pseudocell stats
     fig, axs = plt.subplots(ncols=3, nrows=2, figsize=(40,20), constrained_layout=True)
@@ -125,7 +125,7 @@ for d in adata.obs.donor_long_id.unique():
         axs[1,r].set_title('Leiden res={}'.format(res[r+3]))
     fig.delaxes(ax=axs[1,2])
     fig.suptitle(str(d))
-    plt.savefig(os.path.join(ars.fig_dir, "Pseudocells", str(d)+"_figures", "Number_of_cells_per_pseudocell_"+str(d)+"_Euclidean_Leiden.png"))
+    plt.savefig(os.path.join(args.fig_dir, "Pseudocells", str(d)+"_figures", "Number_of_cells_per_pseudocell_"+str(d)+"_Euclidean_Leiden.png"))
     
     if i==1:
         all_donors = ddonor
@@ -153,7 +153,7 @@ plt.xlabel('Cells per donor', size=16)
 plt.ylabel('Pseudocells per donor', size=17)
 plt.legend(["0.6", "1.0", "1.8", "3.4", "4.0"], title="Leiden res", loc='center left', bbox_to_anchor=(1.03, 0.5), frameon=False, fontsize=14, title_fontsize=16)
 plt.tight_layout() 
-plt.savefig(os.path.join(ars.fig_dir, "Pseudocells", "Cells_vs_Pseudocells_per_donor_Leiden.png"))
+plt.savefig(os.path.join(args.fig_dir, "Pseudocells", "Cells_vs_Pseudocells_per_donor_Leiden.png"))
 
 # Plot n_cells per donor vs. avg n_cells per pseudo-cell per donor 
 avg_cells_pseudocell_06 = all_donors.obs.groupby(by=["donor_long_id","leiden_res_06_euclidean"]).apply(lambda x: x.shape[0]).mean(level=0)
@@ -172,7 +172,7 @@ plt.xlabel('Cells per donor', size=16)
 plt.ylabel('Average cells per pseudocell per donor', size=17)
 plt.legend(["0.6", "1.0", "1.8", "3.4", "4.0"], title="Leiden res", loc='center left', bbox_to_anchor=(1.03, 0.5), frameon=False, fontsize=14, title_fontsize=16)
 plt.tight_layout()
-plt.savefig(os.path.join(ars.fig_dir, "Pseudocells", "Cells_vs_Avg-Cells-Pseudocell_per_donor_Leiden.png"))
+plt.savefig(os.path.join(args.fig_dir, "Pseudocells", "Cells_vs_Avg-Cells-Pseudocell_per_donor_Leiden.png"))
 
                         
 ### Pseudobulk expression ##
