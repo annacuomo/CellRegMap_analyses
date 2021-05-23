@@ -18,6 +18,9 @@ import pandas as pd
 
 from joblib import Parallel, delayed
 
+from numpy_sugar import ddot
+from numpy_sugar.linalg import economic_qs
+
 from limix.qc import quantile_gaussianize
 from struct_lmm2 import StructLMM2, create_variances
 
@@ -30,7 +33,8 @@ from sim_utils import (
     create_kinship_matrix,
     create_kinship_factors,
     simulate_data,
-    sample_nb
+    sample_nb,
+    run_scstructlmm2_fixed
 )
 
 
@@ -128,6 +132,12 @@ print('Setting up kinship matrix ...')
 Lk = create_kinship_factors(create_kinship_matrix(
     params['n_individuals'], n_cells)).Lk
 
+# compute QS if using fixed effect model
+QS = None
+if params['model'] == 'structlmm2_fixed':
+    print('Factorizing K * EE ... ')
+    QS = economic_qs((Lk @ Lk.T) * (env.E @ env.E.T))
+
 # set variances
 v = create_variances(params['r0'], params['v0'])
 
@@ -172,9 +182,35 @@ def sim_and_test(random: np.random.Generator):
     # set up model
     y = y.reshape(y.shape[0], 1)
     M = np.ones_like(y)
-    slmm2 = StructLMM2(y, M, env.E, s.Ls)
-    pv = slmm2.scan_interaction(s.G)
-    return pv[0]
+    
+    if params['model'] == 'structlmm2':
+        model = StructLMM2(
+            y=y,
+            W=M,
+            E=None,
+            E0=env.E[:, :params['n_env_tested']],
+            E1=env.E,
+            Ls=s.Ls)
+        pv = model.scan_interaction(s.G)[0]
+    elif params['model'] == 'structlmm':
+        model = StructLMM2(
+            y=y,
+            W=M,
+            E=None,
+            E0=env.E[:, :params['n_env_tested']],
+            E1=env.E)
+        pv = model.scan_interaction(s.G)[0]
+    elif params['model'] == 'structlmm2_fixed':
+        pv = run_scstructlmm2_fixed(
+            y=y,
+            M=M,
+            E0=env.E[:, :params['n_env_tested']],
+            E1=env.E,
+            G=s.G,
+            QS=QS)
+    else:
+        raise ValueError('Unknown model %s' % params['model'])
+    return pv
 
 threads = min(params['n_genes'], params['threads'])
 if threads == 1:
