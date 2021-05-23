@@ -83,10 +83,13 @@ if (params['n_causal_gxe'] == 0) ^ (params['r0'] == 1):
 
 
 #===============================================================================
-# Simulate data & run tests
+# Simulate data & run tests in parallel across multiple genes
 #===============================================================================
 # initialize random number generator
 random = np.random.default_rng(params['seed'])
+
+# (1) set parameters which are fixed for all genes, such as the envrionment
+# matrix, repeat structure and their respective factorizations:
 
 # set indices of causal SNPs
 (g_causals, gxe_causals) =  set_causal_ids(
@@ -96,7 +99,7 @@ random = np.random.default_rng(params['seed'])
 
 # set cells per donor
 if params['cells_per_individual'] == 'fixed':
-    n_cells = 50
+    n_cells = params['n_cells']
 elif params['cells_per_individual'] == 'variable':
     n_cells = np.arange(params['n_individuals']) + 1
 else:
@@ -106,19 +109,23 @@ else:
 print('Setting up environment matrix ...')
 # create environment matrix and decomposition
 if params['env'] == 'endo':
-    E = sample_endo(params['d_env'],
+    respect_individuals = True
+    if params['n_individuals'] > 124:
+        respect_individuals = False
+    E = sample_endo(params['n_env'],
         params['n_individuals'],
         n_cells,
-        random)
+        random,
+        respect_individuals=respect_individuals)
 elif params['env'] == 'cluster_uniform':
     E = sample_clusters(
-        params['d_env'],
+        params['n_env'],
         params['n_individuals'],
         n_cells,
         random)
 elif params['env'] == 'cluster_biased':
     E = sample_clusters(
-        params['d_env'],
+        params['n_env'],
         params['n_individuals'],
         n_cells,
         random,
@@ -127,10 +134,17 @@ else:
     raise ValueError('Invalid env value: %s' % params['env'])
 env = create_environment_factors(E)
 
+# set ids of environments with GxE effects
+env_gxe_active = list(range(params['n_env_gxe']))
+
 print('Setting up kinship matrix ...')
-# create kinship matrix
+# create factors of kinship matrix
 Lk = create_kinship_factors(create_kinship_matrix(
     params['n_individuals'], n_cells)).Lk
+
+# create factors of E + K * E
+us = env.U * env.S
+Ls = tuple([ddot(us[:, i], Lk) for i in range(us.shape[1])])
 
 # compute QS if using fixed effect model
 QS = None
@@ -141,15 +155,20 @@ if params['model'] == 'structlmm2_fixed':
 # set variances
 v = create_variances(params['r0'], params['v0'])
 
-print('Running simulations for %d gene(s) ... ' % params['n_genes'])
+
+# (2) simulate data for each gene and run tests:
+
 def sim_and_test(random: np.random.Generator):
+    # simulates data for one gene and computes p-values
+
     s = simulate_data(
         offset=params['offset'],
         n_individuals=params['n_individuals'],
         n_snps=params['n_snps'],
         n_cells=n_cells,
         env=env,
-        Lk=Lk,
+        env_gxe_active=env_gxe_active,
+        Ls=Ls,
         maf_min=params['maf_min'],
         maf_max=params['maf_max'],
         g_causals=g_causals,
@@ -158,6 +177,7 @@ def sim_and_test(random: np.random.Generator):
         random=random,
     )
 
+    # adjust likelihood model
     if params['likelihood'] == 'gaussian':
         y = s.y
     elif params['likelihood'] == 'negbin':
@@ -176,10 +196,10 @@ def sim_and_test(random: np.random.Generator):
     else:
         raise ValueError('Unknown likelihood %s' % params['likelihood'])
     
-    if params['normalize']:
+    if params['normalize'] and params['likelihood'] != 'gaussian':
         y = quantile_gaussianize(y)
 
-    # set up model
+    # set up model & run test
     y = y.reshape(y.shape[0], 1)
     M = np.ones_like(y)
     
@@ -212,8 +232,9 @@ def sim_and_test(random: np.random.Generator):
         raise ValueError('Unknown model %s' % params['model'])
     return pv
 
+print('Running simulations for %d gene(s) ... ' % params['n_genes'])
 threads = min(params['n_genes'], params['threads'])
-if threads == 1:
+if params['n_genes'] == 1:
     pvals = sim_and_test(random)
 else:
     # set random state for each simulated gene

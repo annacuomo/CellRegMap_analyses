@@ -43,7 +43,7 @@ def set_causal_ids(
     n_causal_shared: int
 ) -> Tuple[List[int], List[int]]:
     """Set ids of causal SNPs for persistent and gxe effects.
-    
+
     The first n_causal_g SNPs will be persistent genetic effects, while
     n_causal_gxe indices starting at n_causal_g - n_causal_shared will be GxE
     effects.
@@ -72,12 +72,12 @@ def _ncells_to_indices(
 ):
     """Computes number of samples (total number of cells across all individuals)
     and indices for cells of each individual.
-    
+
     Parameters
     ----------
     n_individuals
         Number of individuals to simulate.
-    n_cells 
+    n_cells
         Cells per individual.
     """
     if np.isscalar(n_cells):
@@ -108,14 +108,14 @@ def sample_clusters(
         Number of clusters to simulate.
     n_individuals
         Number of individuals to simulate.
-    n_cells 
+    n_cells
         Cells per individual.
     random
         Random number generator.
     dirichlet_alpha
         If not None, sample the cluster assignment probabilities for each
         individual from a Dirichlet distribution with concentration parameters
-        dirichlet_alpha * np.ones(n_clusters). 
+        dirichlet_alpha * np.ones(n_clusters).
 
     Returns
     ----------
@@ -133,7 +133,7 @@ def sample_clusters(
         # uniform cell distribution
         probs = np.ones((n_individuals, n_clusters)) / n_clusters
 
-    # sample one-hot encodingds for each cell 
+    # sample one-hot encodingds for each cell
     E = np.zeros((n_samples, n_clusters))
     for i, g in enumerate(individual_groups):
         E[g, :] = random.multinomial(1, pvals=probs[i, :], size=len(g))
@@ -141,27 +141,27 @@ def sample_clusters(
 
 
 def sample_endo(
-    d_env: int,
+    n_env: int,
     n_individuals: int,
     n_cells: Union[int, List[int]],
     random: np.random.Generator,
     respect_individuals: bool = True
 ) -> ArrayLike:
     """Samples from Endoderm differentiation PCs.
-    
+
     Parameters
     ----------
-    d_env 
+    n_env
         Number of PCs to sample.
     n_individuals
         Number of individuals to simulate.
-    n_cells 
+    n_cells
         Cells per individual.
     random
         Random number generator.
     respect_individuals
         Use meta information to sample cells for each synthetic individual from
-        only one real individual. Otherwise sample from the combined set of 
+        only one real individual. Otherwise sample from the combined set of
         cells.
 
     Returns
@@ -172,7 +172,7 @@ def sample_endo(
     n_samples, individual_groups = _ncells_to_indices(n_individuals, n_cells)
     cells_by_individual = [len(g) for g in individual_groups]
 
-    endo_pcs = pd.read_csv(ENDO_PCS_PATH, index_col=0).iloc[:, :d_env]
+    endo_pcs = pd.read_csv(ENDO_PCS_PATH, index_col=0).iloc[:, :n_env]
     if not respect_individuals:
         return endo_pcs.loc[random.choice(endo_pcs.index, n_samples)].to_numpy()
 
@@ -184,7 +184,7 @@ def sample_endo(
 
     top_donors = endo_meta['donor'].value_counts(sort=True)[:n_individuals].index
 
-    E = np.zeros((n_samples, d_env))
+    E = np.zeros((n_samples, n_env))
     for i, gi in enumerate(reversed(np.argsort(cells_by_individual))):
         donor = top_donors[i]
         try:
@@ -209,7 +209,7 @@ def create_environment_factors(E: ArrayLike) -> EnvDecomp:
 
     [U, S, _] = economic_svd(E)
     return EnvDecomp(E, U, S)
-    
+
 
 def create_kinship_matrix(
     n_individuals: int,
@@ -230,10 +230,10 @@ def create_kinship_factors(K: ArrayLike) -> KinDecomp:
     K /= K.diagonal().mean()
     jitter(K)
     return KinDecomp(_symmetric_decomp(K), K)
- 
+
 
 Simulation = namedtuple(
-    'Simulation', 
+    'Simulation',
     'mafs y beta_g y_g y_gxe y_k y_e y_n G Ls'
 )
 def simulate_data(
@@ -242,15 +242,53 @@ def simulate_data(
     n_snps: int,
     n_cells: Union[int, List[int]],
     env: EnvDecomp,
-    Lk: ArrayLike,
+    env_gxe_active: List[int],
+    Ls: Tuple[ArrayLike],
     maf_min: float,
     maf_max: float,
-    g_causals: list,
-    gxe_causals: list,
+    g_causals: List[int],
+    gxe_causals: List[int],
     variances: Variances,
     random: np.random.Generator,
 ) -> Simulation:
-    """Simulates data from StructLMM2 model."""
+    """Simulates data from StructLMM2 model.
+    
+    Parameters
+    ----------
+    offset
+        Constant intercept. 
+    n_individuals
+        Number of individuals to simulate.
+    n_snps
+        Number of SNPs to simulate.
+    n_cells
+        The number of cells per individuals. Either int (if same number of cells
+        per individual) or a list of integers.
+    env
+        EnvDecomp named tuple containing the environment matrix and its SVD.
+    env_gxe_active
+        Indices of environments with GxE effects.
+    Ls
+        Factorization of K * EE^T (interaction of repeat structure and
+        environment; see documentation of StructLMM2).
+    maf_min
+        Minimum minor allele frequency.
+    maf_max
+        Maximum minor allele frequency.
+    g_causals
+        Indices of SNPs with genetic effects.
+    gxe_causals
+        Indices of SNPs with GxE effects.
+    variances
+        Named tuple with scaling parameters for each variance component.
+    random
+        Random number generator.
+
+
+    Returns
+    -------
+    Simulation named tuple. 
+    """
     v_g = variances.g if len(g_causals) > 0 else 0
     v_gxe = variances.gxe if len(gxe_causals) > 0 else 0
 
@@ -261,12 +299,9 @@ def simulate_data(
     G = np.repeat(G, n_cells, axis=0)
     G = column_normalize(G)
 
-    us = env.U * env.S
-    Ls = tuple([ddot(us[:, i], Lk) for i in range(us.shape[1])])
-
     beta_g = sample_persistent_effsizes(n_snps, g_causals, v_g, random)
     y_g = sample_persistent_effects(G, beta_g, v_g)
-    y_gxe = sample_gxe_effects(G, env.E, gxe_causals, v_gxe, random)
+    y_gxe = sample_gxe_effects(G, env.E[:, env_gxe_active], gxe_causals, v_gxe, random)
     y_k = sample_random_effect(Ls, variances.k, random)
     y_e = sample_random_effect(env.E, variances.e, random)
     y_n = sample_noise_effects(n_samples, variances.n, random)
@@ -299,10 +334,10 @@ def sample_nb(
     Parameterization using mean (mu) and dispersion (phi).
     """
     n = 1 / phi
-    p = n / (n + mu) 
+    p = n / (n + mu)
     return random.negative_binomial(n=n, p=p, size=size)
 
-    
+
 def lrt_pvalues(
         null_lml: ArrayLike,
         alt_lml: ArrayLike,
