@@ -22,10 +22,11 @@ from numpy_sugar import ddot
 from numpy_sugar.linalg import economic_qs
 
 from limix.qc import quantile_gaussianize
-from struct_lmm2 import StructLMM2, create_variances
+from struct_lmm2 import StructLMM2
 
 from settings import DEFAULT_PARAMS
 from sim_utils import (
+    create_variances,
     set_causal_ids,
     sample_clusters,
     sample_endo,
@@ -101,7 +102,11 @@ random = np.random.default_rng(params['seed'])
 if params['cells_per_individual'] == 'fixed':
     n_cells = params['n_cells']
 elif params['cells_per_individual'] == 'variable':
-    n_cells = np.arange(params['n_individuals']) + 1
+    # n_cells = np.arange(params['n_individuals']) + 1
+    # make sure n_cells.sum() equals params['n_cells'] * params['n_individuals']
+    n = params['n_individuals']
+    n_cells = np.linspace(1, n, n) * 2 * params['n_cells'] / (n + 1)
+    n_cells = n_cells.round().astype(int)
 else:
     raise ValueError(
         'Invalid cells_per_individual value: %s' % params['cells_per_individual'])
@@ -135,7 +140,8 @@ else:
 env = create_environment_factors(E)
 
 # set ids of environments with GxE effects
-env_gxe_active = list(range(params['n_env_gxe']))
+# env_gxe_active = list(range(params['n_env_gxe']))
+env_gxe_active = random.choice(E.shape[1], params['n_env_gxe'])
 
 print('Setting up kinship matrix ...')
 # create factors of kinship matrix
@@ -153,7 +159,11 @@ if params['model'] == 'structlmm2_fixed':
     QS = economic_qs((Lk @ Lk.T) * (env.E @ env.E.T))
 
 # set variances
-v = create_variances(params['r0'], params['v0'])
+v = create_variances(
+    r0=params['r0'],
+    v0=params['v0'],
+    include_noise=params['likelihood'] == 'gaussian'
+)
 
 
 # (2) simulate data for each gene and run tests:

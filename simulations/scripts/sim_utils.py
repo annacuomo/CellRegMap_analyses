@@ -37,6 +37,54 @@ from settings import ENDO_PCS_PATH, ENDO_META_PATH
 #===============================================================================
 
 
+def create_variances(r0, v0, has_kinship=True, include_noise=True) -> Variances:
+    """
+    Remember that:
+        cov(𝐲) = 𝓋₀(1-ρ₀)𝙳𝟏𝟏ᵀ𝙳 + 𝓋₀ρ₀𝙳𝙴𝙴ᵀ𝙳 + 𝓋₁ρ₁EEᵀ + 𝓋₁(1-ρ₁)𝙺 + 𝓋₂𝙸.
+    Let us define:
+        σ²_g   = 𝓋₀(1-ρ₀) (variance explained by persistent genetic effects)
+        σ²_gxe = 𝓋₀ρ₀     (variance explained by GxE effects)
+        σ²_e   = 𝓋₁ρ₁     (variance explained by environmental effects)
+        σ²_k   = 𝓋₁(1-ρ₁) (variance explained by population structure)
+        σ²_n   = 𝓋₂       (residual variance, noise)
+    We set the total variance to sum up to 1:
+        1 = σ²_g + σ²_gxe + σ²_e + σ²_k + σ²_n
+    We set the variances explained by the non-genetic terms to be equal:
+        v = σ²_e = σ²_k = σ²_n
+    For `has_kinship=False`, we instead set the variances such that:
+        v = σ²_e = σ²_n
+    Parameters
+    ----------
+    r0 : float
+        This is ρ₀.
+    v0 : float
+        This is 𝓋₀.
+    """
+    v_g = v0 * (1 - r0)
+    v_gxe = v0 * r0
+
+    v_k = 0.0
+    if has_kinship:
+        n_terms = 3 if include_noise else 2
+        v = (1 - v_gxe - v_g) / n_terms
+        v_e = v
+        v_k = v
+        v_n = v if include_noise else None
+    else:
+        n_terms = 2 if include_noise else 1
+        v = (1 - v_gxe - v_g) / n_terms
+        v_e = v
+        v_n = v if include_noise else None
+
+    variances = {"g": v_g, "gxe": v_gxe, "e": v_e, "n": v_n}
+    if has_kinship:
+        variances["k"] = v_k
+    else:
+        variances["k"] = None
+
+    return Variances(**variances)
+
+
 def set_causal_ids(
     n_causal_g: int,
     n_causal_gxe: int,
@@ -196,7 +244,7 @@ def sample_endo(
             raise ValueError('Not enough real cells per donor. '
                 'Consider using respect_individuals=False.')
         E[individual_groups[gi], :] = endo_pcs.loc[ids].to_numpy()
-    return E
+    return column_normalize(E)
 
 
 EnvDecomp = namedtuple('EnvDecomp', 'E U S')
@@ -304,7 +352,10 @@ def simulate_data(
     y_gxe = sample_gxe_effects(G, env.E[:, env_gxe_active], gxe_causals, v_gxe, random)
     y_k = sample_random_effect(Ls, variances.k, random)
     y_e = sample_random_effect(env.E, variances.e, random)
-    y_n = sample_noise_effects(n_samples, variances.n, random)
+    if variances.n is None:
+        y_n = np.zeros_like(y_e)
+    else:
+        y_n = sample_noise_effects(n_samples, variances.n, random)
 
     y = offset + y_g + y_gxe + y_k + y_e + y_n
 
