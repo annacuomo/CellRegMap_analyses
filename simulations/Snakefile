@@ -16,7 +16,7 @@ rule simulate:
     output:
         f"results/simulations/{paramspace.wildcard_pattern}.txt"
     resources:
-        mem_mb=7500
+        mem_mb=20000
     threads: 5
     params:
         # translate the wildcard values into an instance of the param space
