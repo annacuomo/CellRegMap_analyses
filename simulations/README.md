@@ -14,7 +14,7 @@ creates a directory structure reflecting the non-default parameter values to be 
 - ``scripts/sim_utils.py`` Utility functions for the simulation experiments.
 - ``scripts/simulate.py`` Main simulation script. 
 
-The ``notebooks folder`` contains ``.ipynb`` files to generate the simulation settings as well as code to reproduce the figures.
+The ``notebooks`` folder contains ``.ipynb`` files to generate the simulation settings as well as code to reproduce the figures.
 
 - ``notebooks/save_params.ipynb`` Create ``params.csv`` used in this paper.
 - ``notebooks/test_calibration.ipynb`` Calibration experiments.
