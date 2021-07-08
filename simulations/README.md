@@ -1,6 +1,6 @@
 # Simulation experiments
 
-This directory contains code for reproducing the simulation experiments. To execute the full set of simulations, execute the Snakefile in this directory using ``snakemake``.
+This directory contains code for reproducing the simulation experiments. To execute the full set of simulations, run the Snakefile in this directory using ``snakemake``.
 
 The workflow is based on the [parameter space exploration](https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#parameter-space-exploration) template provided by Snakemake. 
 The full set of parameters along with their default values can be found in ``scripts/settings.py``. Specific simulation settings are specified through ``params.csv``. For the simulation oputputs (_P_-values) Snakemake automatically
