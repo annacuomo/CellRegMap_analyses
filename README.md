@@ -9,4 +9,4 @@ This repository contains the code to reproduce the analyses contained in the Cel
 * [neuroseq](../main/neuroseq/): Dopaminergic neuron differentiation of iPSC lines using single-cell profiles ([2](https://www.nature.com/articles/s41588-021-00801-6))
 
 ## CellRegMap software
-CellRegMap is available at https://github.com/limix/struct-lmm2/.
+CellRegMap is available at https://github.com/limix/CellRegMap/.
