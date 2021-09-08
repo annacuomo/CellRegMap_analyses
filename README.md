@@ -1,6 +1,6 @@
 # CellRegMap analyses
 
-This repository contains the code to reproduce the analyses contained in the CellRegMap manuscript.
+This repository contains the code to reproduce the analyses contained in the [CellRegMap manuscript](https://www.biorxiv.org/content/10.1101/2021.09.01.458524v1).
 
 ## CellRegMap applications
 
