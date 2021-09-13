@@ -19,7 +19,7 @@ from glimix_core.lmm import LMM
 
 import scipy.stats
 
-from struct_lmm2._simulate import (
+from cellregmap._simulate import (
     sample_maf,
     sample_genotype,
     column_normalize,

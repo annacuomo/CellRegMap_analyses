@@ -17,12 +17,13 @@ import numpy as np
 import pandas as pd
 
 from joblib import Parallel, delayed
+import time
 
 from numpy_sugar import ddot
 from numpy_sugar.linalg import economic_qs
 
 from limix.qc import quantile_gaussianize
-from struct_lmm2 import StructLMM2
+from cellregmap import CellRegMap
 
 from settings import DEFAULT_PARAMS
 from sim_utils import (
@@ -213,8 +214,9 @@ def sim_and_test(random: np.random.Generator):
     y = y.reshape(y.shape[0], 1)
     M = np.ones_like(y)
     
+    t_start = time.time()
     if params['model'] == 'structlmm2':
-        model = StructLMM2(
+        model = CellRegMap(
             y=y,
             W=M,
             E=None,
@@ -223,7 +225,7 @@ def sim_and_test(random: np.random.Generator):
             Ls=s.Ls)
         pv = model.scan_interaction(s.G)[0]
     elif params['model'] == 'structlmm':
-        model = StructLMM2(
+        model = CellRegMap(
             y=y,
             W=M,
             E=None,
@@ -240,12 +242,14 @@ def sim_and_test(random: np.random.Generator):
             QS=QS)
     else:
         raise ValueError('Unknown model %s' % params['model'])
-    return pv
+    time_elapsed = time.time() - t_start
+    return pv, time_elapsed
 
 print('Running simulations for %d gene(s) ... ' % params['n_genes'])
 threads = min(params['n_genes'], params['threads'])
 if params['n_genes'] == 1:
-    pvals = sim_and_test(random)
+    pvals, times = sim_and_test(random)
+    times = [times]
 else:
     # set random state for each simulated gene
     random_state = random.integers(
@@ -253,10 +257,13 @@ else:
         size=params['n_genes'])
 
     # run simulations in parallel
-    pvals = Parallel(n_jobs=params['threads'])(
+    results = Parallel(n_jobs=params['threads'])(
         delayed(sim_and_test)(np.random.default_rng(s)) for s in random_state)
+    pvals = [r[0] for r in results]
+    times = [r[1] for r in results]
 print('Done.')
 
 # save p-values
 pd.DataFrame(pvals).to_csv(params['out_file'], header=False, index=False)
+pd.DataFrame(times).to_csv(params['out_file'] + '.log', header=False, index=False)
 
