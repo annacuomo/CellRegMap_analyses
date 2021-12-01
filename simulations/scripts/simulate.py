@@ -25,18 +25,18 @@ from numpy_sugar.linalg import economic_qs
 from limix.qc import quantile_gaussianize
 from cellregmap import CellRegMap
 
-from settings import DEFAULT_PARAMS
+from settings import DEFAULT_PARAMS, FILTERED_KINSHIP_PATH
 from sim_utils import (
     create_variances,
     set_causal_ids,
     sample_clusters,
     sample_endo,
     create_environment_factors,
-    create_kinship_matrix,
+    # create_kinship_matrix,
     create_kinship_factors,
     simulate_data,
     sample_nb,
-    run_scstructlmm2_fixed
+    run_cellregmap_fixed
 )
 
 
@@ -69,7 +69,7 @@ for key, value in DEFAULT_PARAMS.items():
     params[key] = update_variable(key, value)
     print('%20s: %s' % (key, str(params[key])))
 params['threads'] = snakemake.threads if SNAKEMODE else 1
-params['out_file'] = snakemake.output[0] if SNAKEMODE else 'pvals.txt'
+params['out_prefix'] = snakemake.output[0] if SNAKEMODE else 'results'
 
 
 #===============================================================================
@@ -146,8 +146,18 @@ env_gxe_active = random.choice(E.shape[1], params['n_env_gxe'])
 
 print('Setting up kinship matrix ...')
 # create factors of kinship matrix
-Lk = create_kinship_factors(create_kinship_matrix(
-    params['n_individuals'], n_cells)).Lk
+if params['real_genotypes']:
+    if params['n_individuals'] > 100:
+        raise ValueError('n_individuals > 100. Use artificial genotypes.')
+    K = pd.read_csv(FILTERED_KINSHIP_PATH, index_col=0)
+    donor_ids = K.index[:params['n_individuals']].tolist()
+    K = K.iloc[:params['n_individuals'], :params['n_individuals']].to_numpy()
+else:
+    K = np.eye(params['n_individuals'])
+    donor_ids = None
+Lk = create_kinship_factors(K).Lk
+# expand from donors to cells
+Lk = Lk[np.repeat(range(params['n_individuals']), n_cells), :]
 
 # create factors of E + K * E
 us = env.U * env.S
@@ -182,6 +192,8 @@ def sim_and_test(random: np.random.Generator):
         Ls=Ls,
         maf_min=params['maf_min'],
         maf_max=params['maf_max'],
+        real_genotypes=params['real_genotypes'],
+        donor_ids=donor_ids,
         g_causals=g_causals,
         gxe_causals=gxe_causals,
         variances=v,
@@ -215,7 +227,7 @@ def sim_and_test(random: np.random.Generator):
     M = np.ones_like(y)
     
     t_start = time.time()
-    if params['model'] == 'structlmm2':
+    if params['model'] == 'cellregmap':
         model = CellRegMap(
             y=y,
             W=M,
@@ -232,8 +244,8 @@ def sim_and_test(random: np.random.Generator):
             E0=env.E[:, :params['n_env_tested']],
             E1=env.E)
         pv = model.scan_interaction(s.G)[0]
-    elif params['model'] == 'structlmm2_fixed':
-        pv = run_scstructlmm2_fixed(
+    elif params['model'] == 'cellregmap_fixed':
+        pv = run_cellregmap_fixed(
             y=y,
             M=M,
             E0=env.E[:, :params['n_env_tested']],
@@ -243,7 +255,7 @@ def sim_and_test(random: np.random.Generator):
     else:
         raise ValueError('Unknown model %s' % params['model'])
     time_elapsed = time.time() - t_start
-    return pv, time_elapsed
+    return pv, s.donor_ids, s.snp_ids, time_elapsed
 
 print('Running simulations for %d gene(s) ... ' % params['n_genes'])
 threads = min(params['n_genes'], params['threads'])
@@ -260,10 +272,14 @@ else:
     results = Parallel(n_jobs=params['threads'])(
         delayed(sim_and_test)(np.random.default_rng(s)) for s in random_state)
     pvals = [r[0] for r in results]
-    times = [r[1] for r in results]
+    donor_ids = [r[1] for r in results]
+    snp_ids = [r[2] for r in results]
+    times = [r[3] for r in results]
 print('Done.')
 
-# save p-values
-pd.DataFrame(pvals).to_csv(params['out_file'], header=False, index=False)
-pd.DataFrame(times).to_csv(params['out_file'] + '.log', header=False, index=False)
+# save
+pd.DataFrame(pvals).to_csv(params['out_prefix'] + '_pvals.txt', header=False, index=False)
+pd.DataFrame(donor_ids).to_csv(params['out_prefix'] + '_donor_ids.txt', header=False, index=False)
+pd.DataFrame(snp_ids).to_csv(params['out_prefix'] + '_snp_ids.txt', header=False, index=False)
+pd.DataFrame(times).to_csv(params['out_prefix'] + '_runtime.txt', header=False, index=False)
 

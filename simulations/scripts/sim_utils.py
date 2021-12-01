@@ -33,7 +33,11 @@ from cellregmap._simulate import (
     jitter
 )
 
-from settings import ENDO_PCS_PATH, ENDO_META_PATH
+from pandas_plink import read_plink1_bin
+
+import settings
+
+
 #===============================================================================
 
 
@@ -220,11 +224,11 @@ def sample_endo(
     n_samples, individual_groups = _ncells_to_indices(n_individuals, n_cells)
     cells_by_individual = [len(g) for g in individual_groups]
 
-    endo_pcs = pd.read_csv(ENDO_PCS_PATH, index_col=0).iloc[:, :n_env]
+    endo_pcs = pd.read_csv(settings.ENDO_PCS_PATH, index_col=0).iloc[:, :n_env]
     if not respect_individuals:
         return endo_pcs.loc[random.choice(endo_pcs.index, n_samples)].to_numpy()
 
-    endo_meta = pd.read_csv(ENDO_META_PATH, sep='\t')
+    endo_meta = pd.read_csv(settings.ENDO_META_PATH, sep='\t')
     ids = endo_pcs.index.intersection(endo_meta.index)
 
     endo_pcs = endo_pcs.loc[ids]
@@ -259,17 +263,17 @@ def create_environment_factors(E: ArrayLike) -> EnvDecomp:
     return EnvDecomp(E, U, S)
 
 
-def create_kinship_matrix(
-    n_individuals: int,
-    n_cells: Union[int, List[int]],
-) -> ArrayLike:
-    """Creates block-diagonal kinship matrix."""
-    n_samples, individual_groups = _ncells_to_indices(n_individuals, n_cells)
-    K = np.zeros((n_samples, len(individual_groups)))
+# def create_kinship_matrix(
+#     n_individuals: int,
+#     n_cells: Union[int, List[int]],
+# ) -> ArrayLike:
+#     """Creates block-diagonal kinship matrix."""
+#     n_samples, individual_groups = _ncells_to_indices(n_individuals, n_cells)
+#     K = np.zeros((n_samples, len(individual_groups)))
 
-    for i, idx in enumerate(individual_groups):
-        K[idx, i] = 1.0
-    return K @ K.T
+#     for i, idx in enumerate(individual_groups):
+#         K[idx, i] = 1.0
+#     return K @ K.T
 
 
 KinDecomp = namedtuple('KinDecomp', 'Lk K')
@@ -282,7 +286,7 @@ def create_kinship_factors(K: ArrayLike) -> KinDecomp:
 
 Simulation = namedtuple(
     'Simulation',
-    'mafs y beta_g y_g y_gxe y_k y_e y_n G Ls'
+    'snp_ids donor_ids y beta_g y_g y_gxe y_k y_e y_n G Ls'
 )
 def simulate_data(
     offset: float,
@@ -294,12 +298,14 @@ def simulate_data(
     Ls: Tuple[ArrayLike],
     maf_min: float,
     maf_max: float,
+    real_genotypes: bool,
+    donor_ids: List[str],
     g_causals: List[int],
     gxe_causals: List[int],
     variances: Variances,
     random: np.random.Generator,
 ) -> Simulation:
-    """Simulates data from StructLMM2 model.
+    """Simulates data from CellRegMap model.
     
     Parameters
     ----------
@@ -318,11 +324,16 @@ def simulate_data(
         Indices of environments with GxE effects.
     Ls
         Factorization of K * EE^T (interaction of repeat structure and
-        environment; see documentation of StructLMM2).
+        environment; see documentation of CellRegMap).
     maf_min
         Minimum minor allele frequency.
     maf_max
         Maximum minor allele frequency.
+    real_genotypes
+        Use real genotypes from HipSci.
+    donor_ids
+        Donors to simulate (if real_genotypes is True). Length has to match
+        n_individuals.
     g_causals
         Indices of SNPs with genetic effects.
     gxe_causals
@@ -342,8 +353,29 @@ def simulate_data(
 
     n_samples = env.E.shape[0]
 
-    mafs = sample_maf(n_snps, maf_min, maf_max, random)
-    G = sample_genotype(n_individuals, mafs, random)
+    if not real_genotypes:
+        mafs = sample_maf(n_snps, maf_min, maf_max, random)
+        G = sample_genotype(n_individuals, mafs, random)
+        snp_ids = None
+    else:
+        # sample variants from a random 2Mb window
+        G = read_plink1_bin(settings.FILTERED_GENO_PATH, verbose=False)
+        G = G[pd.Series(G.sample).isin(donor_ids), :]
+        attempts = 0
+        MAX_ATTEMPTS = 5
+        while attempts < MAX_ATTEMPTS:
+            region_start = random.choice(48*10**6 - 2*10**6)
+            G_region = G[:, (G.pos >= region_start) & (G.pos < region_start + 2*10**6)]
+            region_snps = G_region.shape[1]
+            if region_snps >= n_snps:
+                G_region = G_region[:, random.choice(region_snps, n_snps, replace=False)]
+                G = G_region.values
+                snp_ids = G_region.snp.to_numpy()
+                break
+            attempts += 1
+        if attempts == MAX_ATTEMPTS:
+            raise ValueError('Could not sample 2Mb region with %d SNPs. Try again or lower n_snps.' % n_snps)
+
     G = np.repeat(G, n_cells, axis=0)
     G = column_normalize(G)
 
@@ -360,7 +392,8 @@ def simulate_data(
     y = offset + y_g + y_gxe + y_k + y_e + y_n
 
     simulation = Simulation(
-        mafs=mafs,
+        snp_ids=snp_ids,
+        donor_ids=donor_ids,
         y=y,
         beta_g=beta_g,
         y_g=y_g,
@@ -417,7 +450,7 @@ def lrt_pvalues(
     return np.clip(pv, epsilon.super_tiny, 1 - epsilon.tiny)
 
 
-def run_scstructlmm2_fixed(
+def run_cellregmap_fixed(
     y: ArrayLike,
     M: ArrayLike,
     E0: ArrayLike,
@@ -425,7 +458,7 @@ def run_scstructlmm2_fixed(
     G: ArrayLike,
     QS: Tuple[Tuple[ArrayLike, ArrayLike], ArrayLike]
 ):
-    """Test for GxE effects using the fixed effect version of scStruct-LMM.
+    """Test for GxE effects using the fixed effect version of CellRegMap.
 
     P-values are Bonferroni-adjusted for the number of environments.
 
