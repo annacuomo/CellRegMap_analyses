@@ -8,19 +8,20 @@ paramspace = Paramspace(pd.read_csv("params.csv"))
 rule all:
     input:
         expand(
-            "results/simulations/{params}.txt",
+            "results/simulations/{params}_pvals.txt",
             params=paramspace.instance_patterns)
 
 
 rule simulate:
     output:
-        f"results/simulations/{paramspace.wildcard_pattern}.txt"
+        f"results/simulations/{paramspace.wildcard_pattern}_pvals.txt"
     resources:
-        mem_mb=20000
-    threads: 5
+        mem_mb=10000
+    threads: 1
     params:
         # translate the wildcard values into an instance of the param space
-        simulation=paramspace.instance
+        simulation=paramspace.instance,
+        out_prefix=lambda wildcards, output: output[0].replace('_pvals.txt', '')
     script:
         'scripts/simulate.py'
 
