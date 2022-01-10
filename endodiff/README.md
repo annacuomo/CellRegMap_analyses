@@ -7,7 +7,7 @@ Application of CellRegMap model on data from [Cuomo et al, 2020](https://www.nat
 The following folders contain scripts for data processing and analysis.
 A short description can be found below:
 
-* [CellRegMap examples](../main/usage/) contains (python) jupyter notebooks showing usage of CellRegMap on these data.
+* [CellRegMap examples](../main/endodiff/usage/) contains (python) jupyter notebooks showing usage of CellRegMap on these data.
 
 * [Prepocessing scripts](../main/preprocessing/) contains R and python jupyter notebooks illustrating pre-processing steps.
 
