@@ -9,6 +9,6 @@ A short description can be found below:
 
 * [CellRegMap examples](../endodiff/usage/) contains (python) jupyter notebooks showing usage of CellRegMap on these data.
 
-* [Prepocessing scripts](../endodiff/preprocessing/) contains R and python jupyter notebooks illustrating pre-processing steps.
+* [Preprocessing scripts](../endodiff/preprocessing/) contains R and python jupyter notebooks illustrating pre-processing steps.
 
 * [Plotting notebooks](../endodiff/plotting/) contains R and python jupyter notebooks to reproduce the [paper](https://www.biorxiv.org/content/10.1101/2021.09.01.458524v1)'s figures (main and supplements).
