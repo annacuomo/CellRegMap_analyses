@@ -1,4 +1,4 @@
-Preprocessing steps (TODO: add workflow figure)
+## Preprocessing steps (TODO: add workflow figure)
 
 * from count matrix (genes x cells)
   * extract latent representation C (e.g., MOFA, PCA)
