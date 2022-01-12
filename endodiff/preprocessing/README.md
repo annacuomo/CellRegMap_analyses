@@ -7,5 +7,5 @@ Add workflow showing preprocessing steps
   * phenotype vectors (one gene at a time, cells x 1) - log2(cpm+1) for the entire count matrix, quantile-normalised each y
 
 * genotypes and kinship (plink) - follow [these](https://github.com/single-cell-genetics/limix_qtl/wiki/Inputs#genotype-file) and [these](https://github.com/single-cell-genetics/limix_qtl/wiki/Inputs#kinship-matrix-file) instructions
- * expand genotypes (donors to cells) as in [here](../preprocessing/Expand_genotypes_kinship.ipynb) 
- * decompose K to hK and then expand hK (donors to cells) as in [here](../preprocessing/Expand_genotypes_kinship.ipynb) 
+  * expand genotypes (donors to cells) as in [here](../preprocessing/Expand_genotypes_kinship.ipynb) 
+  * decompose K to hK and then expand hK (donors to cells) as in [here](../preprocessing/Expand_genotypes_kinship.ipynb) 
