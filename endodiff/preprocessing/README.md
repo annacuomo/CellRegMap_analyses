@@ -1,7 +1,7 @@
 ## Preprocessing steps (TODO: add workflow figure)
 
 * from count matrix (genes x cells)
-  * extract latent representation C (e.g., MOFA, PCA)
+  * extract latent representation C (e.g., [MOFA](https://biofam.github.io/MOFA2/), PCA) - scripts to run MOFA [here](../preprocessing/run_MOFA.R)
     * this may require raw or normalised counts, could require restricting to HVGs only   
     * standardize factors before building C (factors are columns of **C**)
   * phenotype vectors (one gene at a time, cells x 1) - log2(cpm+1) for the entire count matrix, quantile-normalised each **y**
