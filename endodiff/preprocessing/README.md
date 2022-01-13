@@ -9,6 +9,8 @@
 * genotypes and kinship (plink) - follow [these](https://github.com/single-cell-genetics/limix_qtl/wiki/Inputs#genotype-file) and [these](https://github.com/single-cell-genetics/limix_qtl/wiki/Inputs#kinship-matrix-file) instructions
   * expand genotypes **G** (donors to cells) as in [here](../preprocessing/Expand_genotypes_kinship.ipynb) 
   * decompose K to hK and then expand **hK** (donors to cells) as in [here](../preprocessing/Expand_genotypes_kinship.ipynb) 
+    * if no K is available, consider using [this script](../preprocessing/block_diagonal_K.ipynb) to generate hK such that K is block-diagonal. 
+    This will account for repeated observations (cells) for donors (but not for releatedness across donors).
 
 * Fixed effect covariates (**W**)
   * if none are available, add a simple intercept as ``W = numpy.ones((n_cells, 1))``
