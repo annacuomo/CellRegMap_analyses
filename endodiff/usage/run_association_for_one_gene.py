@@ -40,8 +40,8 @@ outfilename = f"{folder}{trait_name}.tsv"
 print(outfilename)
 
 if os.path.exists(outfilename):
-    print("File already exists, skipping gene")
-    continue
+    print("File already exists, exiting")
+    sys.exit()
 
 ############################################
 ########## Sample mapping file #############
