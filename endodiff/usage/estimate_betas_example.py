@@ -6,7 +6,7 @@ from numpy.linalg import cholesky
 from pandas_plink import read_plink1_bin
 from limix.qc import quantile_gaussianize
 
-from cellregmap import run_association
+from cellregmap import estimate_betas
 
 # input files directory
 input_files_dir = "/hps/nobackup/stegle/users/acuomo/all_scripts/struct_LMM2/sc_endodiff/new/input_files/"
@@ -80,103 +80,35 @@ G = read_plink1_bin(plink_file)
 ###### SNP selection
 
 # filter file (columns: snp_id, gene)
-endo_eqtl_file = input_files_dir+"endodiff_eqtl_allconditions_FDR10pct.csv"
+endo_eqtl_file = input_files_dir+""
 endo_eqtl = pd.read_csv(endo_eqtl_file, index_col = False)
 endo_eqtl["chrom"] = [int(i[:i.find("_")]) for i in endo_eqtl["snp_id"]]
 endo_eqtl.head(2)
 
 chrom = 19
+G_chr = G.where(G.chrom == str(chrom), drop=True)
 # consider genes on that chromosome
 genes = endo_eqtl[endo_eqtl['chrom']==int(chrom)]['feature'].unique()
 
-#########################################################
-# cis window around a specific gene (discovery)
+for gene_name in genes
+    # gene name (feature_id)
+    trait_name = re.sub("_.*","",gene_name)
+    out_filename = out_dir + str(trait_name)
 
-def cis_snp_selection(feature_id, annotation_df, G, window_size):
-    feature = annotation_df.query("feature_id==\"{}\"".format(feature_id)).squeeze()
-    chrom = str(feature['chromosome'])
-    start = feature['start']
-    end = feature['end']
-    # make robust to features self-specified back-to-front
-    lowest = min([start,end])
-    highest = max([start,end])
-    # for cis, we sequentially add snps that fall within each region
-    G = G.where((G.chrom == str(chrom)) & (G.pos > (lowest-window_size)) & (G.pos < (highest+window_size)), drop=True)
-    return G
+    # select gene
+    y = phenotype.sel(trait=gene_name)
+    # quantile normalise
+    y = quantile_gaussianize(y)
 
-# (1) gene name (feature_id)
-gene_name = genes[0]
-trait_name = re.sub("_.*","",gene_name)
-trait_name
+    ## select eQTLs for that gene only (from filter file)
+    leads = endo_eqtl[endo_eqtl['feature']==trait_name]['snp_id'].unique()
+    G_sel = G_chr[:,G_chr['snp'].isin(leads)]
 
-# (2) annotation linking gene to genomic position
-annotation_file = "/hps/nobackup/hipsci/scratch/processed_data/rna_seq/annotationFiles/Ensembl_75_Limix_Annotation_FC_Gene.txt"
-anno_df = pd.read_csv(annotation_file, sep="\t", index_col=0)
-anno_df.head(2)
+    # expand out genotypes from cells to donors (and select relevant donors in the same step)
+    G_expanded = G_sel.sel(sample=sample_mapping["genotype_individual_id"].values)
+    assert all(hK_expanded.sample.values == G_expanded.sample.values)
 
-# (3) window size (cis)
-w = 100000
+    # run association test using CellRegMap
+    betas = estimate_betas(y.values, W, C.values[:,0:10], G=G_expanded, hK=hK_expanded)[0]
 
-G_sel = cis_snp_selection(trait_name, anno_df, G, w)
-G_sel.shape
-
-############################################
-##### expand from donors to cells ##########
-
-# expand out genotypes from cells to donors (and select relevant donors in the same step)
-G_expanded = G_sel.sel(sample=sample_mapping["genotype_individual_id"].values)
-assert all(hK_expanded.sample.values == G_expanded.sample.values)
-
-G_expanded.shape
-
-#####################################
-############ Phenotypes #############
-#####################################
-
-# Phenotype (single-cell expression)
-phenotype_file = input_files_dir+"phenotype.csv.pkl"
-phenotype = pd.read_pickle(phenotype_file)
-print("Phenotype shape BEFORE selection: {}".format(phenotype.shape))
-phenotype = xr.DataArray(phenotype.values, dims=["trait", "cell"], coords={"trait": phenotype.index.values, "cell": phenotype.columns.values})
-phenotype = phenotype.sel(cell=sample_mapping["phenotype_sample_id"].values)
-print("Phenotype shape AFTER selection: {}".format(phenotype.shape))
-assert all(phenotype.cell.values == sample_mapping["phenotype_sample_id"].values)
-
-# select gene
-y = phenotype.sel(trait=gene_name)
-# quantile normalise
-y = quantile_gaussianize(y)
-
-######################################
-########## Cell contexts #############
-######################################
-
-# cells by MOFA factors (20)
-C_file = "/hps/nobackup/stegle/users/acuomo/all_scripts/struct_LMM2/sc_endodiff/debug_May2021/mofa_logcounts_model_factors.csv"
-C = pd.read_csv(C_file, index_col = 0)
-C = xr.DataArray(C.values, dims=["cell", "pc"], coords={"cell": C.index.values, "pc": C.columns.values})
-C = C.sel(cell=sample_mapping["phenotype_sample_id"].values)
-assert all(C.cell.values == sample_mapping["phenotype_sample_id"].values)
-
-# quantile normalise cell contexts
-C = quantile_gaussianize(C)
-
-######################################
-############ Covariates ##############
-######################################
-
-# just an interceot in this case
-n_cells = phenotype.shape[1]
-W = ones((n_cells, 1))
-
-out_filename = out_dir + str(trait_name)
-
-# run association test using CellRegMap
-pvals = run_association(y.values, W, C.values[:,0:10], G=G_expanded, hK=hK_expanded)[0]
-
-pv = pd.DataFrame({"chrom":G_expanded.chrom.values,
-               "pv":pvals,
-               "variant":G_expanded.snp.values})
-pv.head()
-
-pv.to_csv(out_filename)
+    betas.to_csv(out_filename)
