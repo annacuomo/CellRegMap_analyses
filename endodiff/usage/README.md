@@ -1,4 +1,4 @@
-Add workflow image
+## Usage (TODO: add workflow image)
 
 * step1: run_association (discovery)
   * select all SNP-gene at FDR<20%
