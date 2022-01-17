@@ -28,8 +28,12 @@ endo_eqtl = pd.read_csv(endo_eqtl_file, index_col = False)
 endo_eqtl["chrom"] = [int(i[:i.find("_")]) for i in endo_eqtl["snp_id"]]
 endo_eqtl.head(2)
 
+genes_file = input_files_dir+"genes_tested.csv"
+g = pd.read_csv(genes_file, index_col = False)
+
 # consider genes on that chromosome
-genes = endo_eqtl[endo_eqtl['chrom']==int(arg["chrom"])]['feature'].unique()
+#genes = endo_eqtl[endo_eqtl['chrom']==int(arg["chrom"])]['feature'].unique()
+genes = g[g['chrom']==int(arg["chrom"])]['feature'].unique()
 
 # gene name (feature_id)
 gene_name = genes[arg["i"]]

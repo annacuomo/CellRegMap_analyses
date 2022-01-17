@@ -1,3 +1,4 @@
+import os
 import re
 import pandas as pd
 import xarray as xr
@@ -80,20 +81,62 @@ G = read_plink1_bin(plink_file)
 ###### SNP selection
 
 # filter file (columns: snp_id, gene)
-endo_eqtl_file = input_files_dir+""
-endo_eqtl = pd.read_csv(endo_eqtl_file, index_col = False)
-endo_eqtl["chrom"] = [int(i[:i.find("_")]) for i in endo_eqtl["snp_id"]]
-endo_eqtl.head(2)
+revision_folder = "/hps/nobackup/stegle/users/acuomo/all_scripts/struct_LMM2/sc_endodiff/debug_May2021/REVISION/"
+fvf_filename = revision_folder+"fvf_new_outliers.csv"
+fvf = pd.read_csv(fvf_filename, index_col = False)
 
-chrom = 19
-G_chr = G.where(G.chrom == str(chrom), drop=True)
-# consider genes on that chromosome
-genes = endo_eqtl[endo_eqtl['chrom']==int(chrom)]['feature'].unique()
+genes = fvf['feature'].unique()
 
-for gene_name in genes
+#####################################
+############ Phenotypes #############
+#####################################
+
+# Phenotype (single-cell expression)
+phenotype_file = input_files_dir+"phenotype.csv.pkl"
+phenotype = pd.read_pickle(phenotype_file)
+print("Phenotype shape BEFORE selection: {}".format(phenotype.shape))
+phenotype = xr.DataArray(phenotype.values, dims=["trait", "cell"], coords={"trait": phenotype.index.values, "cell": phenotype.columns.values})
+phenotype = phenotype.sel(cell=sample_mapping["phenotype_sample_id"].values)
+print("Phenotype shape AFTER selection: {}".format(phenotype.shape))
+assert all(phenotype.cell.values == sample_mapping["phenotype_sample_id"].values)
+
+######################################
+########## Cell contexts #############
+######################################
+
+# cells by MOFA factors (20)
+C_file = "/hps/nobackup/stegle/users/acuomo/all_scripts/struct_LMM2/sc_endodiff/debug_May2021/mofa_logcounts_model_factors.csv"
+C = pd.read_csv(C_file, index_col = 0)
+C = xr.DataArray(C.values, dims=["cell", "pc"], coords={"cell": C.index.values, "pc": C.columns.values})
+C = C.sel(cell=sample_mapping["phenotype_sample_id"].values)
+assert all(C.cell.values == sample_mapping["phenotype_sample_id"].values)
+
+# quantile normalise cell contexts
+C = quantile_gaussianize(C)
+
+######################################
+############ Covariates ##############
+######################################
+
+n_cells = phenotype.shape[1]
+W = ones((n_cells, 1))
+
+######################################
+############ Run and save ############
+######################################
+
+out_dir = revision_folder+"CRM_association_outliers_betas/"
+
+#breakpoint()
+
+for gene_name in genes:
     # gene name (feature_id)
     trait_name = re.sub("_.*","",gene_name)
     out_filename = out_dir + str(trait_name)
+    outfilename_betaGxC = out_filename+"_betaGxC.csv"
+    if os.path.exists(outfilename_betaGxC):
+        print("File already exists, skip gene")
+        continue
 
     # select gene
     y = phenotype.sel(trait=gene_name)
@@ -101,14 +144,27 @@ for gene_name in genes
     y = quantile_gaussianize(y)
 
     ## select eQTLs for that gene only (from filter file)
-    leads = endo_eqtl[endo_eqtl['feature']==trait_name]['snp_id'].unique()
-    G_sel = G_chr[:,G_chr['snp'].isin(leads)]
+    leads = fvf[fvf['feature']==gene_name]['snp_id'].unique()
+    G_sel = G[:,G['snp'].isin(leads)]
 
     # expand out genotypes from cells to donors (and select relevant donors in the same step)
     G_expanded = G_sel.sel(sample=sample_mapping["genotype_individual_id"].values)
     assert all(hK_expanded.sample.values == G_expanded.sample.values)
 
     # run association test using CellRegMap
-    betas = estimate_betas(y.values, W, C.values[:,0:10], G=G_expanded, hK=hK_expanded)[0]
+    betas = estimate_betas(y.values, W, C.values[:,0:10], G=G_expanded, hK=hK_expanded)
+    
+    beta_G = betas[0]
+    beta_GxC = betas[1][0]
+    
+    beta_G_df = pd.DataFrame({"chrom":G_expanded.chrom.values,
+               "betaG":beta_G,
+               "variant":G_expanded.snp.values})
 
-    betas.to_csv(out_filename)
+    beta_G_df.to_csv(out_filename+"_betaG.csv")
+
+    cells = phenotype["cell"].values
+    snps = G_expanded["variant"].values
+
+    beta_GxC_df = pd.DataFrame(data = beta_GxC, columns = snps, index = cells)
+    beta_GxC_df.to_csv(outfilename_betaGxC)
