@@ -33,8 +33,8 @@ for (gene in genes){
     print(nrow(df_rel))    
 
     # some SNPs may be missing
-    snps1 = unique(df_rel$snp_id)
-    snps2 = unique(rownames(R))
+    snps1 = unique(as.character(df_rel$snp_id))
+    snps2 = unique(as.character(rownames(R)))
     common_snps = snps1[snps1 %in% snps2]
 
     # reorder
