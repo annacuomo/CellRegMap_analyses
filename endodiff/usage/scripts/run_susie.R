@@ -32,8 +32,15 @@ for (gene in genes){
     #print(head(df_rel))
     print(nrow(df_rel))    
 
+    # some SNPs may be missing
+    snps1 = unique(df_rel$snp_id)
+    snps2 = unique(rownames(R))
+    common_snps = snps1[snps1 %in% snps2]
+
     # reorder
+    R = R[common_snps,common_snps]
     R = R[order(rownames(R)),order(colnames(R))]
+    df_rel = df_rel[df_rel$snp_id %in% common_snps,]
     df_rel = df_rel[order(df_rel$snp_id),]
 
     z_scores = df_rel$z
