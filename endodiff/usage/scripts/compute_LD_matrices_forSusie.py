@@ -37,7 +37,7 @@ for gene in genes:
 
     out_filename = revision_folder+"LD_matrices_for_susie/"+str(gene)+".csv"
     
-    if os.path.exists(outfilename):
+    if os.path.exists(out_filename):
         print("File already exists, skip gene")
         continue
 
