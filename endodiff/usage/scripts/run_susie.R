@@ -5,6 +5,7 @@ revision_folder = "/hps/nobackup/stegle/users/acuomo/all_scripts/struct_LMM2/sc_
 
 myfile0 = paste0(revision_folder,"Marcs_results_all.csv")
 df0 = read.csv(myfile0, row.names=1)
+print(head(df0))
 
 LD_folder = paste0(revision_folder,"LD_matrices_for_susie/")
 
@@ -19,10 +20,17 @@ for (gene in genes){
     R_file = paste0(LD_folder,gene,".csv")
     R = read.csv(R_file, row.names=1)
     colnames(R) = gsub("X","",colnames(R))
+    #print(head(R))  
+    print(dim(R))
 
     ## get Z scores
     df_rel = df0[df0$feature_id == gene,]
+    if (nrow(df_rel) != length(unique(df_rel$snp_id))){
+        df_rel = df_rel[-which(duplicated(df_rel$snp_id)),]
+    }
     df_rel$z = df_rel$beta / df_rel$beta_se
+    #print(head(df_rel))
+    print(nrow(df_rel))    
 
     # reorder
     R = R[order(rownames(R)),order(colnames(R))]
