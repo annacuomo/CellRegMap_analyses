@@ -9,7 +9,7 @@ from numpy.linalg import cholesky
 from pandas_plink import read_plink1_bin
 from limix.qc import quantile_gaussianize
 
-# from cellregmap import run_interaction
+from cellregmap import run_interaction
 
 arg = {}
 
@@ -18,7 +18,7 @@ arg["i"] = int(sys.argv[1])
 
 # SNP-gene index
 arg["j"] = int(sys.argv[2])
-j = int(arg["j"])
+j = arg["j"]
 
 revision_folder = "/hps/nobackup/stegle/users/acuomo/all_scripts/struct_LMM2/sc_endodiff/debug_May2021/REVISION/"
 
@@ -26,14 +26,20 @@ revision_folder = "/hps/nobackup/stegle/users/acuomo/all_scripts/struct_LMM2/sc_
 # filter file (columns: snp_id, gene)
 fvf_filename = revision_folder+"/CRM_interaction_chr22/fvf.csv"
 fvf = pd.read_csv(fvf_filename, index_col = 0)
+#print(fvf.head())
+
+genes = fvf['feature'].unique()
+#print(genes)
 
 gene_name = genes[arg["i"]]
 trait_name = re.sub("_.*","",gene_name)
+print(gene_name)
+print(trait_name)
 
-fvf_gene = fvf[fvf['feature'==gene_name]]
+fvf_gene = fvf[fvf['feature']==gene_name]
 
 folder = revision_folder+"CRM_interaction_chr22/results/"
-outfilename = f"{folder}{trait_name}/_{j}.tsv"
+outfilename = f"{folder}{trait_name}_{j}.tsv"
 print(outfilename)
 
 if os.path.exists(outfilename):
