@@ -15,7 +15,8 @@ for (gene in genes){
 
     filename = paste0(revision_folder,"results_w_susie_credible_sets/",gene,".csv")
     if (file.exists(filename)){next}
-
+    
+    print(gene)
     ## get LD matrix
     R_file = paste0(LD_folder,gene,".csv")
     R = read.csv(R_file, row.names=1)

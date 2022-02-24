@@ -30,7 +30,7 @@ from numpy_sugar.linalg import economic_qs_linear, economic_svd
 
 from cellregmap._math import PMat, QSCov, ScoreStatistic
 
-from cellregmap import run_interaction
+from cellregmap import CellRegMap, run_interaction
 
 arg = {}
 
