@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     for i in range(len(genes)):
 
-        py = f"python interaction_test_for_10_snp_gene_pairs.py {i} 0"
+        py = f"python interaction_test_2snps_per_gene_permuteG.py {i} 0"
         cmd = f"{bsub} \"{flags} {py}\""
         print(cmd)
         os.system(cmd)
