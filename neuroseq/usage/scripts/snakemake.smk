@@ -6,7 +6,7 @@ Snakefile for DA cells (neuroseq) across conditions for specific genes (colocs) 
 Author: Anna Cuomo
 Affiliation: EMBL-EBI, Wellcome Sanger Institute, Garvan Institute
 Date: Monday 28 February 2022
-#Run: snakemake --snakefile ./snakemake.py --jobs 400 --latency-wait 30 --cluster-config /nfs/leia/research/stegle/acuomo/singlecell_endodiff/singlecell_endodiff/pipeline_snakemakes/cluster.json --cluster 'bsub -q {cluster.queue} -n {cluster.n} -R "rusage[mem={cluster.memory}]" -M {cluster.memory} -o ./DA.o -e ./DA.e' --keep-going --rerun-incomplete
+#Run: snakemake --snakefile ./snakemake.smk --jobs 400 --latency-wait 30 --cluster-config /nfs/leia/research/stegle/acuomo/singlecell_endodiff/singlecell_endodiff/pipeline_snakemakes/cluster.json --cluster 'bsub -q {cluster.queue} -n {cluster.n} -R "rusage[mem={cluster.memory}]" -M {cluster.memory} -o ./DA.o -e ./DA.e' --keep-going --rerun-incomplete
 """
 
 import glob
