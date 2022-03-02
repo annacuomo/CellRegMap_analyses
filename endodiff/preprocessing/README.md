@@ -1,4 +1,4 @@
-## Preprocessing steps (TODO: add workflow figure)
+## Preprocessing steps
 
 * from count matrix (genes x cells)
   * extract latent representation C (e.g., [MOFA](https://biofam.github.io/MOFA2/), PCA) - scripts to use MOFA [here](../preprocessing/run_MOFA.R) and [here](../preprocessing/save_MOFA_results.ipynb)
@@ -18,3 +18,5 @@
   * if they are well defined at donor-level (e.g., age, sex) expand them from donors to cells
 
 y, C, G (expanded), hK (expanded) and W are the inputs for CellRegMap.
+
+### TODO: add workflow figure
