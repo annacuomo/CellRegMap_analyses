@@ -6,7 +6,7 @@ Snakefile for DA cells (neuroseq) across conditions for specific genes (colocs) 
 Author: Anna Cuomo
 Affiliation: EMBL-EBI, Wellcome Sanger Institute, Garvan Institute
 Date: Monday 28 February 2022
-#Run: snakemake --snakefile ./snakemake.py --jobs 400 --latency-wait 30 --cluster-config /nfs/leia/research/stegle/acuomo/singlecell_endodiff/singlecell_endodiff/pipeline_snakemakes/cluster.json --cluster 'bsub -q {cluster.queue} -n {cluster.n} -R "rusage[mem={cluster.memory}]" -M {cluster.memory} -o ./DA.o -e ./DA.e' --keep-going --rerun-incomplete
+#Run: snakemake --snakefile ./snakemake.smk --jobs 400 --latency-wait 30 --cluster-config /nfs/leia/research/stegle/acuomo/singlecell_endodiff/singlecell_endodiff/pipeline_snakemakes/cluster.json --cluster 'bsub -q {cluster.queue} -n {cluster.n} -R "rusage[mem={cluster.memory}]" -M {cluster.memory} -o ./DA.o -e ./DA.e' --keep-going --rerun-incomplete
 """
 
 import glob
@@ -39,20 +39,14 @@ def extendChunk(chunk):
     chunkSplitted = relChunk.split("_")
     return chunkSplitted[0]+":"+chunkSplitted[1]+"-"+chunkSplitted[2]
 
-#input_files_dir = "/hps/nobackup/stegle/users/acuomo/all_scripts/struct_LMM2/sc_neuroseq/May2021/genetic_effect/MOFA10/flip_signs/input_files_ABHD12B-14_51328222_C_T_top20quantile/"
-
 #Variables
 chunkFile = '/nfs/leia/research/stegle/mjbonder/ChunkFiles/chr.txt'
 genotypeFile = '/hps/nobackup2/stegle/users/acuomo/hipsci_genotype_files/hipsci.wec.gtarray.HumanCoreExome.imputed_phased.20170327.genotypes.norm.renamed'
-#genotypeFile = '/hps/nobackup/hipsci/scratch/genotypes/imputed/2017-03-27/Full_Filtered_SNPs_Plink/hipsci.wec.gtarray.HumanCoreExome.imputed_phased.20170327.genotypes.norm.renamed'
-#annotationFile = '/hps/nobackup/hipsci/scratch/singlecell_endodiff/data_processed/scQTLs/annos/ensembl_gene_id_annos.tsv'
 annotationFile = '/nfs/leia/research/stegle/dseaton/hipsci/singlecell_neuroseq/data/metadata/gene_annotation/Homo_sapiens.GRCh37.82.Limix_annotation_gene_level.txt'
 phenotypeFile = '/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_neuroseq/May2021/genetic_effect/MOFA10/flip_signs/input_files_ABHD12B-14_51328222_C_T_top20quantile/phenotypes.tsv'
 covariateFile = '/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_neuroseq/May2021/genetic_effect/MOFA10/flip_signs/input_files_ABHD12B-14_51328222_C_T_top20quantile/covariates.tsv'
-#kinshipFiles = '/hps/nobackup/hipsci/scratch/genotypes/imputed/REL-2018-01/Full_Filtered_Plink-f/hipsci.wec.gtarray.HumanCoreExome.imputed_phased.20170327.genotypes.norm.renamed.recode.filtered.rel'
 kinshipFiles = '/hps/nobackup2/stegle/users/acuomo/hipsci_genotype_files/hipsci.wec.gtarray.HumanCoreExome.imputed_phased.20170327.genotypes.norm.renamed.kinship'
 noiseTermFile = '/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_neuroseq/May2021/genetic_effect/MOFA10/flip_signs/input_files_ABHD12B-14_51328222_C_T_top20quantile/noise_matrix.tsv'
-#sampleMappingFile = input_files_dir+'smf.tsv'
 featureVariantFile = '/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_neuroseq/May2021/genetic_effect/MOFA10/flip_signs/input_files_ABHD12B-14_51328222_C_T_top20quantile/fvf.tsv'
 numberOfPermutations = '1000'
 minorAlleleFrequency = '0.05'
@@ -78,7 +72,6 @@ for chunk in chunks:
 
 ## flatten these lists
 qtlOutput = [filename for elem in qtlOutput for filename in elem]
-#finalQtlRun = [filename for elem in finalQtlRun for filename in elem]
 
 rule all:
     input:
@@ -91,7 +84,6 @@ rule run_qtl_mapping:
         cf = covariateFile,
         kf = kinshipFiles,
         rf = noiseTermFile,
-   #     smf = sampleMappingFile,
         fvf = featureVariantFile
     output:
         '/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_neuroseq/May2021/genetic_effect/MOFA10/flip_signs/input_files_ABHD12B-14_51328222_C_T_top20quantile/results/{chunk}.finished'
@@ -108,12 +100,11 @@ rule run_qtl_mapping:
         chunkFull = extendChunk({wildcards.chunk})
         shell(
             "singularity exec /hps/nobackup2/stegle/users/acuomo/containers/limix206_qtl.simg python /hps/nobackup2/stegle/users/acuomo/tools/hipsci_pipeline/limix_QTL_pipeline/run_QTL_analysis.py "
-            "--plink {params.gen} "
+            " --plink {params.gen} "
             " -af {input.af} "
             " -pf {input.pf} "
             " -cf {input.cf} "
             " -od {params.od} "
-           # " -smf {input.smf} "
             " -fvf {input.fvf} "
             " -rf {input.kf},{input.rf} "
             " -gr {chunkFull} "
@@ -137,7 +128,7 @@ rule aggregate_qtl_results:
     run:
         shell(
             "/nfs/software/stegle/users/acuomo/conda-envs/limix_qtl/bin/python /hps/nobackup2/stegle/users/mjbonder/tools2/hipsci_pipeline/post-processing_QTL/minimal_postprocess.py "
-            "-id {input.IF} "
+            " -id {input.IF} "
             " -od {input.OF} "
             " -sfo -tfb ")
 
@@ -151,6 +142,6 @@ rule aggregate_qtl_results_all:
     run:
         shell(
             "/nfs/software/stegle/users/acuomo/conda-envs/limix_qtl/bin/python /hps/nobackup2/stegle/users/mjbonder/tools2/hipsci_pipeline/post-processing_QTL/minimal_postprocess.py "
-            "-id {input.IF} "
+            " -id {input.IF} "
             " -od {input.OF} "
             " -sfo -mrp 1 ")

@@ -1,13 +1,28 @@
-## Usage (TODO: add workflow image)
+## Usage 
 
-* step1: run_association (discovery)
-  * select all SNP-gene at FDR<20%
+* Step1: run_association (discovery)
+  *   Consider all genes (perhaps above a mean expression threshold) and all SNPs in cis (specifying a window, e.g., 1Mb)
+  *   For example, run [association script] for all gene-SNP pairs (in cis) - you can use a [runner script] to submit one job per XX
+  *   Summarise all results (e.g., using this [summarising script])
+  *   Perform muliple testing correction
+
+* Intermediate step 1
+  * select all SNP-gene pairs at FDR<20%
   * create filter file for those SNP-gene pairs
 
-* step2: run_interaction (on SNP-gene pairs from filter file)
+* Step2: run_interaction (on SNP-gene pairs from filter file)
+  * For example, use the [interaction script], [runner script] and [summarising script] to run this analysis, using the filter file defined above
+  * perform multiple testing correction
+
+* Intermediate step 2
   * after multiple testing correction, identify list of context-specific eQTLs (FDR<5%)
 
-* step3: estimate betas (for significant GxC eQTLs from step2)
+* Step3: estimate betas (for significant GxC eQTLs from step2)
+  * [example script] - also add runner and summarising scripts
 
 
-step1 can be skipped and substituted by directly creating a filter file based on a set of a priori defined eQTLs we want to investigate
+### Note
+
+Step1 can be skipped and substituted by directly creating a filter file based on a set of a priori defined eQTLs we want to investigate (add example script)
+
+### (TODO: add workflow image)
