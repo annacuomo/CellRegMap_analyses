@@ -20,11 +20,12 @@ arg["i"] = int(sys.argv[1])
 arg["j"] = int(sys.argv[2])
 j = arg["j"]
 
-revision_folder = "/hps/nobackup/stegle/users/acuomo/all_scripts/struct_LMM2/sc_endodiff/debug_May2021/REVISION/"
+revision_folder = "/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_endodiff/debug_May2021/REVISION/"
 
 ####### right away check if this was already run for this gene
 # filter file (columns: snp_id, gene)
-fvf_filename = revision_folder+"/CRM_interaction_chr22/fvf.csv"
+#fvf_filename = revision_folder+"/CRM_interaction_chr22/fvf.csv"
+fvf_filename = revision_folder+"/CRM_interaction_chr21/fvf.csv"
 fvf = pd.read_csv(fvf_filename, index_col = 0)
 #print(fvf.head())
 
@@ -48,7 +49,7 @@ if os.path.exists(outfilename):
 
 
 # input files directory
-input_files_dir = "/hps/nobackup/stegle/users/acuomo/all_scripts/struct_LMM2/sc_endodiff/new/input_files/"
+input_files_dir = "/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_endodiff/new/input_files/"
 
 ############################################
 ########## Sample mapping file #############
@@ -73,7 +74,8 @@ print("Number of unique donors: {}".format(len(donors)))
 ############################################
 
 ## read in GRM (genotype relationship matrix; kinship matrix)
-kinship_folder="/hps/nobackup/hipsci/scratch/genotypes/imputed/2017-03-27/Full_Filtered_SNPs_Plink-F/"
+#kinship_folder="/hps/nobackup/hipsci/scratch/genotypes/imputed/2017-03-27/Full_Filtered_SNPs_Plink-F/"
+kinship_folder = "/hps/nobackup2/stegle/users/acuomo/hipsci_genotype_files/"
 kinship_file=kinship_folder+"hipsci.wec.gtarray.HumanCoreExome.imputed_phased.20170327.genotypes.norm.renamed.kinship"
 K = pd.read_csv(kinship_file, sep="\t", index_col=0)
 assert all(K.columns == K.index) #symmetric matrix, donors x donors
@@ -111,7 +113,8 @@ assert all(hK_expanded.sample.values == sample_mapping["genotype_individual_id"]
 #####################################
 
 ## read in genotype file (plink format)
-plink_folder = "/hps/nobackup/hipsci/scratch/genotypes/imputed/2017-03-27/Full_Filtered_SNPs_Plink/"
+plink_folder = "/hps/nobackup2/stegle/users/acuomo/hipsci_genotype_files/"
+#plink_folder = "/hps/nobackup/hipsci/scratch/genotypes/imputed/2017-03-27/Full_Filtered_SNPs_Plink/"
 plink_file = plink_folder+"hipsci.wec.gtarray.HumanCoreExome.imputed_phased.20170327.genotypes.norm.renamed.bed"
 G = read_plink1_bin(plink_file)
 
@@ -120,7 +123,7 @@ G = read_plink1_bin(plink_file)
 ######################################
 
 # cells by MOFA factors (20)
-C_file = "/hps/nobackup/stegle/users/acuomo/all_scripts/struct_LMM2/sc_endodiff/debug_May2021/mofa_logcounts_model_factors.csv"
+C_file = "/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_endodiff/debug_May2021/mofa_logcounts_model_factors.csv"
 C = pd.read_csv(C_file, index_col = 0)
 C = xr.DataArray(C.values, dims=["cell", "pc"], coords={"cell": C.index.values, "pc": C.columns.values})
 C = C.sel(cell=sample_mapping["phenotype_sample_id"].values)
