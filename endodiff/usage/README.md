@@ -2,7 +2,7 @@
 
 * Step1: run_association (discovery)
   *   Consider all genes (perhaps above a mean expression threshold) and all SNPs in cis (specifying a window, e.g., 1Mb)
-  *   For example, run [association script](../association_test_for_one_gene.py) for all gene-SNP pairs (in cis) - you can use a [runner script] to submit one job per gene
+  *   For example, run [association script](../../../association_test_for_one_gene.py) for all gene-SNP pairs (in cis) - you can use a [runner script] to submit one job per gene
   *   Summarise all results (e.g., using this [summarising script])
   *   Perform muliple testing correction
 
