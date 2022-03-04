@@ -1,14 +1,14 @@
-## Preprocessing steps (TODO: add workflow figure)
+## Preprocessing steps
 
-* from count matrix (genes x cells)
-  * extract latent representation C (e.g., [MOFA](https://biofam.github.io/MOFA2/), PCA) - scripts to use MOFA [here](../preprocessing/run_MOFA.R) and [here](../preprocessing/save_MOFA_results.ipynb)
+* From count matrix (genes x cells)
+  * Extract latent representation C (e.g., [MOFA](https://biofam.github.io/MOFA2/), PCA) - scripts to use MOFA [here](../preprocessing/run_MOFA.R) and [here](../preprocessing/save_MOFA_results.ipynb)
     * this may require raw or normalised counts, could require restricting to HVGs only   
     * standardize factors before building C (factors are columns of **C**)
-  * phenotype vectors (one gene at a time, cells x 1) - log2(cpm+1) for the entire count matrix, quantile-normalised each **y**
+  * Define single-cell expression "phenotype" vectors (one gene at a time, cells x 1) - log2(cpm+1) for the entire count matrix, quantile-normalised each **y**
 
-* genotypes and kinship (plink) - follow [these](https://github.com/single-cell-genetics/limix_qtl/wiki/Inputs#genotype-file) and [these](https://github.com/single-cell-genetics/limix_qtl/wiki/Inputs#kinship-matrix-file) instructions
-  * expand genotypes **G** (donors to cells) as in [here](../preprocessing/Expand_genotypes_kinship.ipynb) 
-  * decompose K to hK and then expand **hK** (donors to cells) as in [here](../preprocessing/Expand_genotypes_kinship.ipynb) 
+* Genotypes and Kinship files (plink) - follow [these](https://github.com/single-cell-genetics/limix_qtl/wiki/Inputs#genotype-file) and [these](https://github.com/single-cell-genetics/limix_qtl/wiki/Inputs#kinship-matrix-file) instructions
+  * Expand genotypes **G** (donors to cells) as in [here](../preprocessing/Expand_genotypes_kinship.ipynb) 
+  * Decompose K to hK and then expand **hK** (donors to cells) as in [here](../preprocessing/Expand_genotypes_kinship.ipynb) 
     * if no K is available, consider using [this script](../preprocessing/block_diagonal_K.ipynb) to generate hK such that K is block-diagonal. 
     This will account for repeated observations (cells) for donors (but not for releatedness across donors).
 
@@ -18,3 +18,11 @@
   * if they are well defined at donor-level (e.g., age, sex) expand them from donors to cells
 
 y, C, G (expanded), hK (expanded) and W are the inputs for CellRegMap.
+
+### TODO: add workflow figure
+
+<!-- consider adding pseudocells workflow here
+
+details on normalisation (e.g. SCT), batch correction
+
+details on genotype format(s) -->
