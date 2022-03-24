@@ -7,8 +7,8 @@ Application of CellRegMap model on data from [Jerber et al, 2021](https://www.na
 The following folders contain scripts for data processing and analysis.
 A short description can be found below:
 
-* [CellRegMap examples](../neuroseq/usage/) contains (python) jupyter notebooks showing usage of CellRegMap on these data.
+* [CellRegMap examples](../neuroseq/usage/) contains (Python) jupyter notebooks showing usage of CellRegMap on these data.
 
-* [Preprocessing scripts](../neuroseq/preprocessing/) contains python jupyter notebooks and scripts illustrating pre-processing steps.
+* [Preprocessing scripts](../neuroseq/preprocessing/) contains Python jupyter notebooks and scripts illustrating pre-processing steps.
 
-* [Plotting notebooks](../neuroseq/plotting/) contains R and python jupyter notebooks to reproduce the [paper](https://www.biorxiv.org/content/10.1101/2021.09.01.458524v1)'s figures (main and supplementary figures 4 & 5).
+* [Plotting notebooks](../neuroseq/plotting/) contains R and Python jupyter notebooks to reproduce the [paper](https://www.biorxiv.org/content/10.1101/2021.09.01.458524v1)'s figures (main and supplementary figures 4 & 5).
