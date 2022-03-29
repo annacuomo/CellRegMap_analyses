@@ -1,12 +1,13 @@
 # Folders
-simulations/results/simulations
+simulations/results
 simulations/data
 simulations/lsf_reports
+simulations/run_snakemake.sh
 
 # Snakemake
 .snakemake
 
-# OSX 
+# OSX
 .DS_Store
 
 # VSCode

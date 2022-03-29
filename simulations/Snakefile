@@ -1,26 +1,136 @@
-from snakemake.utils import Paramspace
-import pandas as pd
+import utils.settings as settings
 
-# declare a dataframe to be a paramspace
-paramspace = Paramspace(pd.read_csv("params.csv"))
-
+YRANGE = '500'
 
 rule all:
     input:
-        expand(
-            "results/simulations/{params}.txt",
-            params=paramspace.instance_patterns)
+        # FEV GxC
+        expand("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
+            "_model~{model}_context~mofa_ntested~{ntested}_pvals.txt",
+            gvar=settings.GENETIC_VAR,
+            fevgxc=settings.FEV_GXC,
+            ncontexts=settings.NUM_CONTEXTS_DEFAULT,
+            model=['cellregmap-association', 'cellregmap', 'cellregmap-fixed-single-env'],
+            ntested=settings.NUM_TESTED_DEFAULT),
+        # Discrete contexts
+        expand("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
+            "_model~{model}_context~day_ntested~{ntested}_pvals.txt",
+            gvar=settings.GENETIC_VAR,
+            fevgxc=settings.FEV_GXC_DEFAULT,
+            ncontexts=settings.NUM_CONTEXTS_DEFAULT,
+            model=['cellregmap'],
+            ntested=4),
+        expand("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
+            "_model~{model}_context~leiden_ntested~{ntested}_pvals.txt",
+            gvar=settings.GENETIC_VAR,
+            fevgxc=settings.FEV_GXC_DEFAULT,
+            ncontexts=settings.NUM_CONTEXTS_DEFAULT,
+            model=['cellregmap'],
+            ntested=12),
+        # #Contexts
+        expand("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
+            "_model~{model}_context~mofa_ntested~{ntested}_pvals.txt",
+            gvar=settings.GENETIC_VAR,
+            fevgxc=settings.FEV_GXC_DEFAULT,
+            ncontexts=settings.NUM_CONTEXTS,
+            model=['cellregmap', 'cellregmap-fixed-single-env'],
+            ntested=settings.NUM_TESTED[-1]),
+        # #Tested
+        expand("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
+            "_model~{model}_context~mofa_ntested~{ntested}_pvals.txt",
+            gvar=settings.GENETIC_VAR,
+            fevgxc=settings.FEV_GXC_DEFAULT,
+            ncontexts=settings.NUM_CONTEXTS[-1],
+            model=['cellregmap', 'cellregmap-fixed-single-env'],
+            ntested=settings.NUM_TESTED),
+        # Calibration interaction
+        expand("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
+            "_model~{model}_context~mofa_ntested~{ntested}_pvals.txt",
+            gvar=settings.GENETIC_VAR + [0.0],
+            fevgxc=0.0,
+            ncontexts=settings.NUM_CONTEXTS_DEFAULT,
+            model=['cellregmap', 'cellregmap-fixed-single-env', 'cellregmap-fixed-multi-env', 'structlmm'],
+            ntested=[settings.NUM_TESTED_DEFAULT, settings.NUM_TESTED[-1]]),
+        # Calibration association
+        expand("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
+            "_model~{model}_context~mofa_ntested~{ntested}_pvals.txt",
+            gvar=0.0,
+            fevgxc=0.0,
+            ncontexts=settings.NUM_CONTEXTS_DEFAULT,
+            model=['cellregmap-association', 'cellregmap-association2'],
+            ntested=[settings.NUM_TESTED_DEFAULT, settings.NUM_TESTED[-1]]),
+        # Permuted
+        expand("results/permuted/model~{model}_ntested~{ntested}_pvals.txt",
+            # model=['cellregmap-association', 'cellregmap-association2', 'cellregmap', 'cellregmap-fixed-single-env', 'cellregmap-fixed-multi-env', 'structlmm'],
+            model=['cellregmap-association',  'structlmm'],
+            ntested=[settings.NUM_TESTED_DEFAULT, settings.NUM_TESTED[-1]])
+        ## Real
+        #expand("results/real/model~{model}_ntested~{ntested}_pvals.txt",
+        #    # model=['cellregmap-association', 'cellregmap-association2', 'cellregmap', 'cellregmap-fixed-single-env', 'cellregmap-fixed-multi-env', 'structlmm'],
+        #    model=['cellregmap', 'cellregmap-association',  'structlmm'],
+        #    ntested=[settings.NUM_TESTED_DEFAULT, settings.NUM_TESTED[-1]])
 
 
-rule simulate:
+rule run_simulated:
     output:
-        f"results/simulations/{paramspace.wildcard_pattern}.txt"
+        pvals=("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
+        "_model~{model}_context~{context}_ntested~{ntested}_pvals.txt")
+    resources:
+        mem_mb=10000
+    threads: 5
+    params:
+        out_prefix=lambda wildcards, output: output[0].replace('_pvals.txt', '')
+    shell:
+        'python utils/run_tests.py'
+        ' -M {wildcards.model}'
+        ' --adata "data/simulated/gvar~{wildcards.gvar}_fevgxc~{wildcards.fevgxc}_ncontexts~{wildcards.ncontexts}/adata.h5ad"'
+        ' -K "data/filtered/kinship.csv"'
+        ' -G "data/filtered/genotypes_sim.bed"'
+        ' -C {wildcards.context}'
+        ' --n_GxC {wildcards.ntested}'
+        ' --n_C 20'
+        f' --y_range {YRANGE}'
+        ' -O "{params.out_prefix}"'
+
+
+rule run_permuted:
+    output:
+        pvals=("results/permuted/model~{model}_ntested~{ntested}_pvals.txt")
     resources:
         mem_mb=20000
     threads: 5
     params:
-        # translate the wildcard values into an instance of the param space
-        simulation=paramspace.instance
-    script:
-        'scripts/simulate.py'
+        out_prefix=lambda wildcards, output: output[0].replace('_pvals.txt', '')
+    shell:
+        'python utils/run_tests.py'
+        ' -M {wildcards.model}'
+        ' --adata "data/filtered/adata_calib.h5ad"'
+        ' -K "data/filtered/kinship.csv"'
+        ' -G "data/filtered/genotypes_calib.bed"'
+        ' -C mofa'
+        ' --n_GxC {wildcards.ntested}'
+        ' --n_C 20'
+        f' --y_range {YRANGE}'
+        ' --permute'
+        ' -O "{params.out_prefix}"'
+
+rule run_real:
+    output:
+        pvals=("results/real/model~{model}_ntested~{ntested}_pvals.txt")
+    resources:
+        mem_mb=20000
+    threads: 5
+    params:
+        out_prefix=lambda wildcards, output: output[0].replace('_pvals.txt', '')
+    shell:
+        'python utils/run_tests.py'
+        ' -M {wildcards.model}'
+        ' --adata "data/filtered/adata_calib.h5ad"'
+        ' -K "data/filtered/kinship.csv"'
+        ' -G "data/filtered/genotypes_calib.bed"'
+        ' -C mofa'
+        ' --n_GxC {wildcards.ntested}'
+        ' --n_C 20'
+        f' --y_range {YRANGE}'
+        ' -O "{params.out_prefix}"'
 
