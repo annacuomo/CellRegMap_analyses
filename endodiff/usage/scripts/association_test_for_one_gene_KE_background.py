@@ -5,7 +5,8 @@ import pandas as pd
 import xarray as xr
 from numpy import ones
 from numpy_sugar import ddot
-from numpy.linalg import cholesky, economic_svd
+from numpy.linalg import cholesky
+from numpy_sugar.linalg import economic_svd
 from pandas_plink import read_plink1_bin
 from limix.qc import quantile_gaussianize
 
@@ -207,8 +208,15 @@ us = U * S
 Ls = [ddot(us[:,i], hK_expanded) for i in range(us.shape[1])]
 del us
 
+import time
+
+start_time = time.time()
 crm = CellRegMap(y=y, W=W, E=C.values[:,0:10], Ls=Ls)
+print("--- %s seconds ---" % (time.time() - start_time))
+
+start_time = time.time()
 pvals = crm.scan_association_fast(GG)[0]
+print("--- %s seconds ---" % (time.time() - start_time))
 
 pv = pd.DataFrame({"chrom":G_expanded.chrom.values,
                "pv":pvals,

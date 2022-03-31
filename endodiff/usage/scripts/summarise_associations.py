@@ -39,8 +39,8 @@ def fdr(p_vals):
 
     return fdr
 
-path_results = "/hps/nobackup/stegle/users/acuomo/all_scripts/struct_LMM2/sc_endodiff/debug_May2021/REVISION/CRM_association/"
-
+#path_results = "/hps/nobackup/stegle/users/acuomo/all_scripts/struct_LMM2/sc_endodiff/debug_May2021/REVISION/CRM_association/"
+path_results = "/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_endodiff/debug_May2021/REVISION/CRM_association_KE/"
 
 if __name__ == '__main__':
 
@@ -55,12 +55,14 @@ if __name__ == '__main__':
     count_failed = 0
     #breakpoint()
     for file in files:
+        #print(file)
         #breakpoint()
         if re.search("perm",file) is not None:
             continue
         x += 1
         if x%500 == 0: print (x)
         df = pd.read_csv(file, index_col=0)
+        #print(df.head())
         nsnps = int(len(df))
         if nsnps==0:
             continue
