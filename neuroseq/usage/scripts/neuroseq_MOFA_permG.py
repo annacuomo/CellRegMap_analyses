@@ -24,7 +24,7 @@ arg["j"] = int(sys.argv[2])
 seed = arg["j"]
 
 
-revision_folder = "/hps/nobackup/stegle/users/acuomo/all_scripts/struct_LMM2/sc_neuroseq/May2021/REVISION/"
+revision_folder = "/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_neuroseq/May2021/REVISION/"
 
 ####### right away check if this was already run for this gene
 # filter file (columns: snp_id, gene)
@@ -35,7 +35,8 @@ genes = fvf['feature'].unique()
 #print(genes)
 
 gene_name = genes[arg["i"]]
-trait_name = re.sub("_.*","",gene_name)
+trait_name = gene_name
+#trait_name = re.sub("_.*","",gene_name)
 print(gene_name)
 print(trait_name)
 
@@ -100,6 +101,7 @@ print("Sample mapping number of rows AFTER intersection: {}".format(sample_mappi
 ## use sel from xarray to expand hK (using the sample mapping file)
 hK_expanded = hK.sel(sample=sample_mapping["genotype_individual_id"].values)
 assert all(hK_expanded.sample.values == sample_mapping["genotype_individual_id"].values)
+
 #####################################
 ############ Genotypes ##############
 #####################################
@@ -150,7 +152,7 @@ assert all(E.cell.values == sample_mapping["phenotype_sample_id"].values)
 [U, S, _] = economic_svd(E)
 us = U * S
 # get decomposition of K*EEt
-Ls = [ddot(us[:,i], L_expanded) for i in range(us.shape[1])]
+Ls = [ddot(us[:,i], hK_expanded) for i in range(us.shape[1])]
 
 #####################################
 ############ Phenotypes #############
