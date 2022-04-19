@@ -94,6 +94,7 @@ genes = neuro_eqtl[neuro_eqtl['chrom']==int(arg["chrom"])]['feature'].unique()
 n_samples = phenotype.shape[1]
 M = ones((n_samples, 1))
 
+outdir = "/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_neuroseq/May2021/REVISION/CRM_interaction_discrete_contexts/18clusters/"
 
 for trait_name in genes:
 	outfilename = outdir + str(trait_name) + ".tsv"
