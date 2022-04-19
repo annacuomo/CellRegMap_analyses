@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import ones
 from numpy_sugar import ddot
+import re
 import os
 import sys
 import pandas as pd
@@ -119,25 +120,4 @@ for trait_name in genes:
 	   "pv":pvals,
 	   "variant":G_expanded.snp.values})
 	pv.to_csv(outfilename)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
