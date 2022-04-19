@@ -115,7 +115,7 @@ for trait_name in genes:
 	W = ones((n_cells, 1))
 	GG = G_expanded.values
 	print("Running for gene {}".format(trait_name))
-	pvals = run_interaction(y=y, W=W, E=C_gauss.values[:,0:10], E1=C_gauss.values[:,0:10], E2=C.values[:,0:20], G=GG, hK=hK_expanded)[0]
+	pvals = run_interaction(y=y, W=W, E=E.values[:,0:10], E1=E.values[:,0:10], E2=E.values[:,0:20], G=GG, hK=hK_expanded)[0]
 	pv = pd.DataFrame({"chrom":G_expanded.chrom.values,
 	   "pv":pvals,
 	   "variant":G_expanded.snp.values})
