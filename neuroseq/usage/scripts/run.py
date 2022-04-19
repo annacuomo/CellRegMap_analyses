@@ -23,8 +23,9 @@ if __name__ == '__main__':
         bsub = "bsub -q standard -n 10 -o out/ -e err/ -R \"rusage[mem=80000]\" -M 80000"
         flags = "MKL_NUM_THREADS=1 MKL_DYNAMIC=FALSE"
         #for j in range(100):
-        py = f"python neuroseq_MOFA.py {chrom} no"
-        py = f"python neuroseq_MOFA_ge.py {chrom} no"
+        py = f"python neuroseq_MOFA_discrete_contexts.py {chrom}"
+        #py = f"python neuroseq_MOFA.py {chrom} no"
+        #py = f"python neuroseq_MOFA_ge.py {chrom} no"
         cmd = f"{bsub} \"{flags} {py}\""
         print(cmd)
         #sys.exit(0)
