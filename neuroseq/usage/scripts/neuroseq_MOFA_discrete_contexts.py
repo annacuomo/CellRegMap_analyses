@@ -8,7 +8,7 @@ from pandas_plink import read_plink1_bin
 from numpy.linalg import cholesky
 from numpy_sugar.linalg import economic_svd
 import xarray as xr
-from struct_lmm2 import StructLMM2
+from cellregmap import run_interaction
 from limix.qc import quantile_gaussianize
 
 arg = {}
