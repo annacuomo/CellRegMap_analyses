@@ -98,8 +98,8 @@ M = ones((n_samples, 1))
 outdir = "/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_neuroseq/May2021/REVISION/CRM_interaction_discrete_contexts/9clusters/"
 
 for trait_name in genes:
-    gene_name = re.sub("-",".",trait_name)
-    outfilename = outdir + str(gene_name) + ".tsv"
+	gene_name = re.sub("-",".",trait_name)
+	outfilename = outdir + str(gene_name) + ".tsv"
 	if os.path.exists(outfilename):
 		print("File already exists, exiting")
 		continue
