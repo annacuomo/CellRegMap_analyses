@@ -66,7 +66,7 @@ assert all(hK_expanded.sample.values == sample_mapping["genotype_individual_id"]
 
 # environments
 # cells by discrete clusters based on MOFA factors (18)
-E_file = "/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_neuroseq/May2021/REVISION/C_discrete_9clusters.csv"
+E_file = "/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_neuroseq/May2021/REVISION/C_discrete_18clusters.csv"
 E = pd.read_csv(E_file, index_col = 0)
 E = xr.DataArray(E.values, dims=["cell", "pc"], coords={"cell": E.index.values, "pc": E.columns.values})
 E = E.sel(cell=sample_mapping["phenotype_sample_id"].values)
@@ -95,7 +95,7 @@ genes = neuro_eqtl[neuro_eqtl['chrom']==int(arg["chrom"])]['feature'].unique()
 n_samples = phenotype.shape[1]
 M = ones((n_samples, 1))
 
-outdir = "/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_neuroseq/May2021/REVISION/CRM_interaction_discrete_contexts/9clusters/"
+outdir = "/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc_neuroseq/May2021/REVISION/CRM_interaction_discrete_contexts/18clusters/"
 
 for trait_name in genes:
 	gene_name = re.sub("-",".",trait_name)
