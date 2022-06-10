@@ -56,12 +56,6 @@ def parse_args():
     parser.add_argument(
         "--n_GxC", type=int, default=10, help="Number of contexts for GxC"
     )
-    parser.add_argument(
-        "--permute",
-        action="store_true",
-        default=False,
-        help="Permute coordinates appropriately",
-    )
     parser.add_argument("--seed", type=int, default=42)
     return parser.parse_args()
 
@@ -109,14 +103,6 @@ def main():
         raise ValueError('Unrecognized genotype file format')
 
     ids = range(adata.shape[0])
-    if args.permute:
-        df = pd.DataFrame(adata.obs["donor_long_id"])
-        df["ids"] = range(df.shape[0])
-        ids = (
-            df.set_index("donor_long_id")
-            .loc[rng.permutation(df["donor_long_id"].unique())]["ids"]
-            .to_numpy()
-        )
     ############################################################################
     # PREPROCESS EXPRESSION AND CONTEXTS
     ############################################################################
