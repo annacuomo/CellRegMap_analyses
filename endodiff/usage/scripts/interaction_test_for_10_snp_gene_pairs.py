@@ -25,7 +25,8 @@ revision_folder = "/hps/nobackup2/stegle/users/acuomo/all_scripts/struct_LMM2/sc
 ####### right away check if this was already run for this gene
 # filter file (columns: snp_id, gene)
 #fvf_filename = revision_folder+"/CRM_interaction_chr22/fvf.csv"
-fvf_filename = revision_folder+"/CRM_interaction_chr21/fvf.csv"
+#fvf_filename = revision_folder+"/CRM_interaction_chr21/fvf.csv"
+fvf_filename = revision_folder+"/CRM_interaction_chr20/fvf.csv"
 fvf = pd.read_csv(fvf_filename, index_col = 0)
 #print(fvf.head())
 

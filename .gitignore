@@ -1,8 +1,15 @@
+# Files
+endodiff/usage/scripts/run_assoc.sh
+
 # Folders
 simulations/results
 simulations/data
 simulations/lsf_reports
 simulations/run_snakemake.sh
+endodiff/usage/scripts/err
+endodiff/usage/scripts/out
+neuroseq/usage/scripts/err
+neuroseq/usage/scripts/out
 
 # Snakemake
 .snakemake

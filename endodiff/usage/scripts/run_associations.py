@@ -24,8 +24,9 @@ if __name__ == '__main__':
         flags = "MKL_NUM_THREADS=1 MKL_DYNAMIC=FALSE"
         
         for i in range(len(genes)):
-
-            py = f"python association_test_for_one_gene.py {chrom} {i}"
+            
+            py = f"python association_test_for_one_gene_KE_background.py {chrom} {i}"
+            #py = f"python association_test_for_one_gene.py {chrom} {i}"
             cmd = f"{bsub} \"{flags} {py}\""
             print(cmd)
             #sys.exit(0)
