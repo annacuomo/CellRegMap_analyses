@@ -1,17 +1,10 @@
 import utils.settings as settings
+from utils.helper import ensure_list
 
 YRANGE = '500'
 
 rule all:
     input:
-        # FEV GxC
-        expand("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
-            "_model~{model}_context~mofa_ntested~{ntested}_pvals.txt",
-            gvar=settings.GENETIC_VAR,
-            fevgxc=settings.FEV_GXC,
-            ncontexts=settings.NUM_CONTEXTS_DEFAULT,
-            model=['cellregmap-association', 'cellregmap', 'cellregmap-fixed-single-env'],
-            ntested=settings.NUM_TESTED_DEFAULT),
         # Discrete contexts
         expand("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
             "_model~{model}_context~day_ntested~{ntested}_pvals.txt",
@@ -21,12 +14,27 @@ rule all:
             model=['cellregmap'],
             ntested=4),
         expand("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
-            "_model~{model}_context~leiden_ntested~{ntested}_pvals.txt",
+            "_model~{model}_context~leiden12_ntested~{ntested}_pvals.txt",
             gvar=settings.GENETIC_VAR,
             fevgxc=settings.FEV_GXC_DEFAULT,
             ncontexts=settings.NUM_CONTEXTS_DEFAULT,
             model=['cellregmap'],
             ntested=12),
+        expand("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
+            "_model~{model}_context~leiden24_ntested~{ntested}_pvals.txt",
+            gvar=settings.GENETIC_VAR,
+            fevgxc=settings.FEV_GXC_DEFAULT,
+            ncontexts=settings.NUM_CONTEXTS_DEFAULT,
+            model=['cellregmap'],
+            ntested=24),
+        # FEV GxC
+        expand("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
+            "_model~{model}_context~mofa_ntested~{ntested}_pvals.txt",
+            gvar=settings.GENETIC_VAR,
+            fevgxc=settings.FEV_GXC,
+            ncontexts=settings.NUM_CONTEXTS_DEFAULT,
+            model=['cellregmap-association', 'cellregmap', 'cellregmap-fixed-single-env'],
+            ntested=settings.NUM_TESTED_DEFAULT),
         # #Contexts
         expand("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
             "_model~{model}_context~mofa_ntested~{ntested}_pvals.txt",
@@ -46,7 +54,7 @@ rule all:
         # Calibration interaction
         expand("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
             "_model~{model}_context~mofa_ntested~{ntested}_pvals.txt",
-            gvar=settings.GENETIC_VAR + [0.0],
+            gvar=ensure_list(settings.GENETIC_VAR) + [0.0],
             fevgxc=0.0,
             ncontexts=settings.NUM_CONTEXTS_DEFAULT,
             model=['cellregmap', 'cellregmap-fixed-single-env', 'cellregmap-fixed-multi-env', 'structlmm'],
@@ -57,24 +65,30 @@ rule all:
             gvar=0.0,
             fevgxc=0.0,
             ncontexts=settings.NUM_CONTEXTS_DEFAULT,
-            model=['cellregmap-association', 'cellregmap-association2'],
-            ntested=[settings.NUM_TESTED_DEFAULT, settings.NUM_TESTED[-1]]),
-        # Permuted
-        expand("results/permuted/model~{model}_ntested~{ntested}_pvals.txt",
-            # model=['cellregmap-association', 'cellregmap-association2', 'cellregmap', 'cellregmap-fixed-single-env', 'cellregmap-fixed-multi-env', 'structlmm'],
-            model=['cellregmap-association',  'structlmm'],
-            ntested=[settings.NUM_TESTED_DEFAULT, settings.NUM_TESTED[-1]])
-        ## Real
-        #expand("results/real/model~{model}_ntested~{ntested}_pvals.txt",
-        #    # model=['cellregmap-association', 'cellregmap-association2', 'cellregmap', 'cellregmap-fixed-single-env', 'cellregmap-fixed-multi-env', 'structlmm'],
-        #    model=['cellregmap', 'cellregmap-association',  'structlmm'],
-        #    ntested=[settings.NUM_TESTED_DEFAULT, settings.NUM_TESTED[-1]])
+            model=['cellregmap-association'],
+            ntested=settings.NUM_TESTED_DEFAULT),
+        # Runtime
+        expand("results/runtime/model~{model}_ncells~{ncells}_ndonors~{ndonors}_ntested~{ntested}_runtime.txt",
+            model=['cellregmap', 'cellregmap-association'],
+            ncells=settings.RUNTIME_N_CELLS_DEFAULT,
+            ndonors=settings.RUNTIME_N_DONORS,
+            ntested=settings.NUM_TESTED_DEFAULT),
+        expand("results/runtime/model~{model}_ncells~{ncells}_ndonors~{ndonors}_ntested~{ntested}_runtime.txt",
+            model=['cellregmap', 'cellregmap-association'],
+            ncells=settings.RUNTIME_N_CELLS,
+            ndonors=settings.RUNTIME_N_DONORS_DEFAULT,
+            ntested=settings.NUM_TESTED_DEFAULT),
+        expand("results/runtime/model~{model}_ncells~{ncells}_ndonors~{ndonors}_ntested~{ntested}_runtime.txt",
+            model=['cellregmap', 'cellregmap-association'],
+            ncells=settings.RUNTIME_N_CELLS_DEFAULT,
+            ndonors=settings.RUNTIME_N_DONORS_DEFAULT,
+            ntested=settings.NUM_TESTED)
 
 
 rule run_simulated:
     output:
         pvals=("results/simulated/gvar~{gvar}_fevgxc~{fevgxc}_ncontexts~{ncontexts}"
-        "_model~{model}_context~{context}_ntested~{ntested}_pvals.txt")
+            "_model~{model}_context~{context}_ntested~{ntested}_pvals.txt")
     resources:
         mem_mb=10000
     threads: 5
@@ -88,49 +102,28 @@ rule run_simulated:
         ' -G "data/filtered/genotypes_sim.bed"'
         ' -C {wildcards.context}'
         ' --n_GxC {wildcards.ntested}'
-        ' --n_C 20'
+        ' --n_C {wildcards.ntested}'
         f' --y_range {YRANGE}'
         ' -O "{params.out_prefix}"'
 
 
-rule run_permuted:
+rule assess_runtime:
     output:
-        pvals=("results/permuted/model~{model}_ntested~{ntested}_pvals.txt")
+        pvals = ("results/runtime/model~{model}_ncells~{ncells}_ndonors~{ndonors}"
+            "_ntested~{ntested}_runtime.txt")
     resources:
         mem_mb=20000
     threads: 5
     params:
-        out_prefix=lambda wildcards, output: output[0].replace('_pvals.txt', '')
+        out_prefix=lambda wildcards, output: output[0].replace('_runtime.txt', '')
     shell:
         'python utils/run_tests.py'
         ' -M {wildcards.model}'
-        ' --adata "data/filtered/adata_calib.h5ad"'
-        ' -K "data/filtered/kinship.csv"'
-        ' -G "data/filtered/genotypes_calib.bed"'
+        ' --adata "data/filtered/adata_runtime_ncells~{wildcards.ncells}_ndonors~{wildcards.ndonors}.h5ad"'
+        ' -K "data/filtered/kinship_runtime.csv"'
+        ' -G "data/filtered/genotypes_runtime.csv"'
         ' -C mofa'
         ' --n_GxC {wildcards.ntested}'
-        ' --n_C 20'
-        f' --y_range {YRANGE}'
-        ' --permute'
-        ' -O "{params.out_prefix}"'
-
-rule run_real:
-    output:
-        pvals=("results/real/model~{model}_ntested~{ntested}_pvals.txt")
-    resources:
-        mem_mb=20000
-    threads: 5
-    params:
-        out_prefix=lambda wildcards, output: output[0].replace('_pvals.txt', '')
-    shell:
-        'python utils/run_tests.py'
-        ' -M {wildcards.model}'
-        ' --adata "data/filtered/adata_calib.h5ad"'
-        ' -K "data/filtered/kinship.csv"'
-        ' -G "data/filtered/genotypes_calib.bed"'
-        ' -C mofa'
-        ' --n_GxC {wildcards.ntested}'
-        ' --n_C 20'
-        f' --y_range {YRANGE}'
+        ' --n_C {wildcards.ntested}'
         ' -O "{params.out_prefix}"'
 
