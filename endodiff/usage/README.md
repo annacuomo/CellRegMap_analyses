@@ -1,8 +1,8 @@
 ## Usage 
 
 * Step1: run_association (discovery)
-  *   Consider all genes (perhaps above a mean expression threshold) and all SNPs in cis (specifying a window, _e.g._, 1Mb)
-  *   For example, run [association script](scripts/association_test_for_one_gene.py) for all gene-SNP pairs (in cis) - you can use a [runner script](scripts/run_associations.py) to submit one job per gene
+  *   Consider all genes (perhaps above a mean expression threshold) and all SNPs in _cis_ (specifying a window, _e.g._, 1Mb)
+  *   For example, run [association script](scripts/association_test_for_one_gene.py) for all gene-SNP pairs (in _cis_) - you can use a [runner script](scripts/run_associations.py) to submit one job per gene
   *   Summarise all results (_e.g._, using this [summarising script](scripts/summarise_associations.py))
   *   Perform muliple testing correction
 
@@ -18,7 +18,7 @@
   * after multiple testing correction, identify list of context-specific eQTLs (FDR < 5%)
 
 * Step3: estimate betas (for significant GxC eQTLs from step2)
-  * [example script] - also add runner and summarising scripts
+<!--  * [example script] - also add runner and summarising scripts -->
 
 
 ### Note
