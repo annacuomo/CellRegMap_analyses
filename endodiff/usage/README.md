@@ -2,7 +2,7 @@
 
 * Step1: run_association (discovery)
   *   Consider all genes (perhaps above a mean expression threshold) and all SNPs in cis (specifying a window, _e.g._, 1Mb)
-  *   For example, run [association script](../usage/scripts/association_test_for_one_gene.py) for all gene-SNP pairs (in cis) - you can use a [runner script](../usage/scripts/run_associations.py) to submit one job per gene
+  *   For example, run [association script](scripts/association_test_for_one_gene.py) for all gene-SNP pairs (in cis) - you can use a [runner script](scripts/run_associations.py) to submit one job per gene
   *   Summarise all results (_e.g._, using this [summarising script](scripts/summarise_associations.py))
   *   Perform muliple testing correction
 
@@ -11,7 +11,7 @@
   * create filter file for those SNP-gene pairs
 
 * Step2: run_interaction (on SNP-gene pairs from filter file)
-  * For example, use the [interaction script](../usage/scripts/interaction_test_for_10_snp_gene_pairs.py), [runner script](../usage/scripts/run_interactions.py) and [summarising script](../usage/scripts/summarise_interactions.py) to run this analysis, using the filter file defined above
+  * For example, use the [interaction script](scripts/interaction_test_for_10_snp_gene_pairs.py), [runner script](scripts/run_interactions.py) and [summarising script](scripts/summarise_interactions.py) to run this analysis, using the filter file defined above
   * perform multiple testing correction
 
 * Intermediate step 2
