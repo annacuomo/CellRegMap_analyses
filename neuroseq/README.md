@@ -1,6 +1,6 @@
 ## Application to differentiating iPSC-derived dopaminergic neurons
 
-Application of CellRegMap model on data from [Jerber et al, 2021](https://www.nature.com/articles/s41588-021-00801-6).
+Application of CellRegMap model on data from [Jerber*, Seaton*, Cuomo* et al, 2021](https://www.nature.com/articles/s41588-021-00801-6).
 
 ## Contents:
 
