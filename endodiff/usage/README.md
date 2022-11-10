@@ -1,9 +1,9 @@
 ## Usage 
 
 * Step1: run_association (discovery)
-  *   Consider all genes (perhaps above a mean expression threshold) and all SNPs in cis (specifying a window, e.g., 1Mb)
+  *   Consider all genes (perhaps above a mean expression threshold) and all SNPs in cis (specifying a window, _e.g._, 1Mb)
   *   For example, run [association script](../usage/scripts/association_test_for_one_gene.py) for all gene-SNP pairs (in cis) - you can use a [runner script](../usage/scripts/run_associations.py) to submit one job per gene
-  *   Summarise all results (_e.g._, using this [summarising script](../usage/scripts/summarising_associations.py))
+  *   Summarise all results (_e.g._, using this [summarising script](scripts/summarising_associations.py))
   *   Perform muliple testing correction
 
 * Intermediate step 1
@@ -25,4 +25,4 @@
 
 Step1 can be skipped and substituted by directly creating a filter file based on a set of a priori defined eQTLs we want to investigate (add example script)
 
-### (TODO: add workflow image)
+<!-- ### (TODO: add workflow image) -->
